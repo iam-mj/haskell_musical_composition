@@ -22,7 +22,9 @@ maintainer:         mariaverdes14@gmail.com
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  Music.Data, Music.Utils
+    exposed-modules:  
+        Music.Data
+        Music.Utils
 
     -- Modules included in this library but not exported.
     -- other-modules:

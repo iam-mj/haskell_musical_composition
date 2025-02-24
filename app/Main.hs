@@ -3,6 +3,9 @@ module Main where
 import Music.Data 
 import Music.Utils
 
+main :: IO ()
+main = return ()
+
 -- test values
 myGroup = single $ note A 0.5
 myDuo = duo 2 (note C 1)
@@ -13,8 +16,3 @@ uncleanTrack = linkT [EmptyT, EmptyT, EmptyT, myTrack, EmptyT, EmptyT, myTrack, 
 cleanTrack = cleanT uncleanTrack
 
 trackE = interpret $ link [myGroup, myDuo, myChord]
-
--- next steps: 
--- -- finish representation 
--- -> add some modifiers - diez, bemol, dot
--- -- toMIDI logic
