@@ -46,8 +46,9 @@ transpose n (Note ptch dur) = Note (pitch $ pitchToInt ptch + n) dur
 
 -- get the intervals in semitones for a certain chord
 intervals :: Chord -> [Int]
-intervals MajorThird = [0, 2, 4]
-intervals MinorThird = [0, 2, 3]
+intervals MajorThird = [0, 4, 7]
+intervals MinorThird = [0, 3, 7]
+intervals (CustomChord interval) = interval
 
 -- interpret a Track as a TrackE in order to be able to play it
 interpret :: Track -> TrackE
