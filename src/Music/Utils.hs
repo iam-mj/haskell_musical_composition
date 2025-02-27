@@ -27,7 +27,6 @@ cleanT (groups :+: EmptyT) = cleanT groups
 cleanT (groupsL :+: groupsR) = cleanT groupsL :+: cleanT groupsR
 
 -- turn a pitch into an int
--- TODO: add more pitch classes
 pitchToInt :: Pitch -> Int
 pitchToInt pitch = case pitch of
     C -> 0; D -> 2; E -> 4; F -> 5; G -> 7; A -> 9; B -> 11;

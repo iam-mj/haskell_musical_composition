@@ -1,5 +1,8 @@
 module Music.Data where
 
+-- TODO: consider not exporting the constructors, just the constructor functions
+-- because only through the constructor functions can i check that certain conditions are met
+
 type Duration = Float -- where a whole note has a 1.0 duration, half a note has 0.5 ...
 
 -- the "pitchToInt" function depends on these constructors
@@ -37,7 +40,7 @@ data TrackE = EmptyET            -- nothing
             | TrackE :::: TrackE  -- parallel operator
             deriving Show
 
-type Octave = Int -- <= 12 ?? - might have to check this at creation !!
+type Octave = Int -- < 12
 
 -- adds a key to a track in order to make it playable
 data Music = Music TrackE Octave
@@ -56,21 +59,17 @@ single note@(Note _ _) = Single note
 single rest@(Rest _) = Single rest
 
 duo :: Interval -> Primitive -> Group
-duo interval note@(Note _ _)= Duo interval note
--- TODO: duo _ _ = "Error - can't make interval with rest root; use a note instead or try a single"
+duo interval note@(Note _ _) = Duo interval note
+duo _ _ = error "Can't make an interval with a rest root. Use a note instead or build a single."
 
 chord :: Chord -> Primitive -> Group
 chord chd note@(Note _ _) = Chord chd note
--- TODO: chord _ _ = "Error - can't make chords with rest root; use a note instead or try a single"
+chord _ _ = error "Can't make chords with a rest root. Use a note instead or build a single."
 
 track :: Group -> Track
 track = Prim
 
--- music :: TrackE -> Octave -> Either String Music
--- music track octave
---     | 0 < octave && octave <= 12 = Right (Music track octave)
---     | otherwise = Left "Given octave is invalid. Please make sure the octave is greater than 0 and less than 13."
-
--- TODO: manage octave exception
 music :: [TrackE] -> Octave -> Music
-music tracks octave = foldl (\music track -> music ::: Music track octave) (Music (head tracks) octave) (tail tracks)
+music tracks octave 
+    | 0 <= octave && octave < 12 = foldl (\music track -> music ::: Music track octave) (Music (head tracks) octave) (tail tracks)
+    | otherwise = error "Input octave is invalid. Make sure octave is a natural number and 0 <= octave < 12."
