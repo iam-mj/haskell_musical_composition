@@ -18,6 +18,34 @@ repeatG track group n = track :+: link (replicate n group)
 repeatN :: Track -> Primitive -> Int -> Track
 repeatN track note = repeatG track (Single note)
 
+-- get primitive duration
+durationP :: Primitive -> Duration
+durationP (Note _ dur) = dur
+durationP (Rest dur) = dur
+
+-- get duration of a group
+durationG :: Group -> Duration
+durationG (Single primitive) = durationP primitive
+durationG (Duo _ primitive) = durationP primitive
+durationG (Chord _ primitive) = durationP primitive
+
+-- get duration of a track
+durationT :: Track -> Duration
+durationT EmptyT = 0
+durationT (Prim group) = durationG group
+durationT (track1 :+: track2) = durationT track1 + durationT track2
+
+-- parallelize two tracks
+-- parallelizeT :: Track -> Track -> Track
+-- parallelizeT EmptyT track = track
+-- parallelizeT track EmptyT = track
+
+-- group notes of different durations
+-- parallelize :: [Primitive] -> Track 
+-- parallelize [] = EmptyT
+-- parallelize [note@(Note _ _)] = Prim (Single note)
+-- parallelize ()
+
 -- remove all empty groups from a succesion of groups in a track
 cleanT :: Track -> Track
 cleanT EmptyT = EmptyT
