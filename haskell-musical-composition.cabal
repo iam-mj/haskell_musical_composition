@@ -25,6 +25,7 @@ library
     exposed-modules:  
         Music.Data
         Music.Utils
+        MIDI.ToMIDI
 
     -- Modules included in this library but not exported.
     -- other-modules:
