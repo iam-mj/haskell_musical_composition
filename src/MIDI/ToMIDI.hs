@@ -29,19 +29,27 @@ emptyPitch = 0 :: AbsPitch
 -- TODO: add context at one point + tempo & metro
 
 
--- TODO: check this is correct
+-- TODO: check this is correct - should always be between 0-127
 absPitch :: Pitch -> Octave -> AbsPitch
 absPitch pit octave = octave * 12 + pitchToInt pit
 
--- TODO: make sure the timestamp updates as it should
--- TODO: write this using the do notation of the List Monad??
+-- merge 2 performances into 1, so that the events are in ascending order by the timestamp
+merge :: Performance -> Performance -> Performance
+merge p1 [] = p1
+merge [] p2 = p2
+merge p1@(e1 : es1) p2@(e2 : es2)
+    | eTime e1 <= eTime e2 = e1 : merge es1 p2
+    | otherwise            = e2 : merge p1 es2
+
+-- transforms a music piece into a performance (<=> an event list)
 perform :: Music -> Performance
 perform (Music trackE octave instr) = 
-    let perf trE oct ins = case trE of
-            EmptyET                 -> [MEvent 0 ins 0 0 0 []]
-            PrimET (Note pit dur)   -> [MEvent 0 ins (absPitch pit oct) dur defVolume noParams]
-            PrimET (Rest dur)       -> [MEvent 0 ins emptyPitch dur defVolume noParams]
-            trackE1 :++: trackE2    -> perf trackE1 oct ins ++ perf trackE2 oct ins
-            trackE1 :::: trackE2    -> undefined -- TODO: how do i do this...
-    in perf trackE octave instr
+    let perf trE oct ins time = case trE of
+            EmptyET                 -> return $ MEvent time ins 0 0 0 []
+            PrimET (Note pit dur)   -> return $ MEvent time ins (absPitch pit oct) dur defVolume noParams
+            PrimET (Rest dur)       -> return $ MEvent time ins emptyPitch dur defVolume noParams
+            trackE1 :++: trackE2    -> perf trackE1 oct ins time ++ perf trackE2 oct ins (time + durationET trackE1)
+            trackE1 :::: trackE2    -> merge (perf trackE1 oct ins time) (perf trackE2 oct ins time)
+    in perf trackE octave instr 0
+perform (music1 ::: music2) = merge (perform music1) (perform music2)
 

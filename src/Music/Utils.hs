@@ -35,6 +35,14 @@ durationT EmptyT = 0
 durationT (Prim group) = durationG group
 durationT (track1 :+: track2) = durationT track1 + durationT track2
 
+-- get duration of an extended track
+durationET :: TrackE -> Duration
+durationET EmptyET = 0
+durationET (PrimET (Note _ dur)) = dur
+durationET (PrimET (Rest dur)) = dur
+durationET (track1 :++: track2) = durationET track1 + durationET track2
+durationET (track1 :::: track2) = max (durationET track1) (durationET track2) 
+
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track
 -- parallelizeT EmptyT track = track
@@ -80,8 +88,12 @@ intervals (CustomChord interval) = interval
 
 -- interpret a Track as a TrackE in order to be able to play it
 interpret :: Track -> TrackE
-interpret EmptyT = EmptyET
-interpret (Prim (Single prim)) = PrimET prim
-interpret (Prim (Duo int note)) = PrimET note :::: PrimET (transpose int note) 
-interpret (Prim (Chord chord note)) = foldl (\notes int -> notes :::: PrimET (transpose int note)) (PrimET note) (tail $ intervals chord)
-interpret (track1 :+: track2) = interpret track1 :++: interpret track2
+interpret track = interpretT $ cleanT track
+
+-- TODO: don't export this one
+interpretT :: Track -> TrackE
+interpretT EmptyT = EmptyET
+interpretT (Prim (Single prim)) = PrimET prim
+interpretT (Prim (Duo int note)) = PrimET note :::: PrimET (transpose int note) 
+interpretT (Prim (Chord chord note)) = foldl (\notes int -> notes :::: PrimET (transpose int note)) (PrimET note) (tail $ intervals chord)
+interpretT (track1 :+: track2) = interpretT track1 :++: interpretT track2
