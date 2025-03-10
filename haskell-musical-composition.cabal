@@ -25,6 +25,7 @@ library
     exposed-modules:  
         Music.Data
         Music.Utils
+        MIDI.Performance
         MIDI.ToMIDI
 
     -- Modules included in this library but not exported.
@@ -32,7 +33,9 @@ library
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.17.2.0
+    build-depends:    
+        base ^>=4.17.2.0,
+        HCodecs ^>=0.5.2
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -46,6 +49,7 @@ executable haskell-musical-composition
     -- other-extensions:
     build-depends:
         base ^>=4.17.2.0,
+        HCodecs ^>=0.5.2,
         haskell-musical-composition
 
     hs-source-dirs:   app

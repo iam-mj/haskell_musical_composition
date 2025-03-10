@@ -2,7 +2,7 @@ module Main where
 
 import Music.Data 
 import Music.Utils
-import MIDI.ToMIDI
+import MIDI.Performance
 
 main :: IO ()
 main = return ()
