@@ -89,7 +89,7 @@ data Instrument =
   |  GuitarFretNoise        | BreathNoise            | Seashore
   |  BirdTweet              | TelephoneRing          | Helicopter
   |  Applause               | Gunshot                | Percussion
-  deriving Show
+  deriving (Show, Eq)
 
 -- adds a key to a track in order to make it playable
 -- as well as a instrument
