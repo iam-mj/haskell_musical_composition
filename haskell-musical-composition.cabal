@@ -27,6 +27,7 @@ library
         Music.Utils
         MIDI.Performance
         MIDI.ToMIDI
+        MIDI.InstrChannel
 
     -- Modules included in this library but not exported.
     -- other-modules:
