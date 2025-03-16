@@ -3,7 +3,10 @@ module MIDI.ToMIDI where
 import MIDI.Performance
 import MIDI.InstrChannel
 import Codec.Midi
-import Music.Data (Instrument)
+import Music.Data (Instrument, Music)
+
+exportMusic :: Music -> FilePath -> IO ()
+exportMusic m path = (exportFile path . toMidi . perform) m
 
 -- can't make them directly synthetiser-midi values cause we might want to export them
 -- turns a performance into a midi value: Midi fileType timeDev tracks
