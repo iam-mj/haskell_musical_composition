@@ -1,15 +1,19 @@
 module MIDI.ToMIDI where
 
-import MIDI.Performance
-import MIDI.InstrChannel
 import Codec.Midi
 import Music.Data (Instrument, Music)
+import MIDI.Performance
+import MIDI.InstrChannel
+import MIDI.Synthesizer
 
-exportMusic :: Music -> FilePath -> IO ()
-exportMusic m path = (exportFile path . toMidi . perform) m
+playMusic :: Music -> FilePath -> IO ()
+playMusic music file = do
+    exportFile file ((toMidi . perform) music)
+    playMidiFile file
 
 -- can't make them directly synthetiser-midi values cause we might want to export them
 -- turns a performance into a midi value: Midi fileType timeDev tracks
+-- Codec.Midi's fromAbsTime changes the timestamps from absolute to relative toDelta times
 toMidi :: Performance -> Midi
 toMidi performance = 
     let pairs = splitByInst performance
@@ -18,7 +22,7 @@ toMidi performance =
                 then SingleTrack 
                 else MultiTrack)
             (TicksPerBeat division)
-            (map (fromAbsTime . makeTrack icmap) pairs) -- TODO: what exactly does fromAbsTime doooo
+            (map (fromAbsTime . makeTrack icmap) pairs)
 
 division = 96 :: Int -- TODO: find out more about this
 
@@ -43,20 +47,17 @@ addAssociation key event list = newAssoc key event list []
             if key == inst then newAssoc inst event pairs ((key, event : events) : newList)
                            else newAssoc inst event pairs (current : newList)
 
-defTempo = 500000 :: Int
-
--- we'll use the NoteOn, NoteOff, ProgramChange, TempoChange & TrackEnd
+-- we'll use the NoteOn, NoteOff, ProgramChange, TempoChange
 -- we'll have a track for each instrument
 makeTrack :: InstrumentChannelMap -> (Instrument, [MusicEvent]) -> [(Ticks, Message)]
 makeTrack icmap (inst, events) = 
     let (ch, prgNum) = lookupChannel icmap inst
         instrEvent = (0, ProgramChange ch prgNum)
         tempoEvent = (0, TempoChange defTempo)
-        endEvent = (0, TrackEnd) -- TODO: timestamp 0 is okay i wonder...
         melody [] = []
         melody (ev : evs) = let (start, stop) = makeMEvents ch ev
                             in start : insertMEvent stop (melody evs)
-    in instrEvent : tempoEvent : melody events ++ [endEvent]
+    in instrEvent : tempoEvent : melody events
 
 -- each MusicEvent will transform into 2 Midi events: one NoteOn & one NoteOff
 makeMEvents :: Channel -> MusicEvent -> ((Ticks, Message), (Ticks, Message))
