@@ -8,27 +8,46 @@ import Data.Maybe (fromJust)
 
 defTempo = 500000 :: Int
 
--- render audio of a given midi file
-playMidiFile :: FilePath -> IO ()
-playMidiFile midiFile = do
-    initialize
+openDevice :: IO (Either PMError PMStream)
+openDevice = do
     maybeDevice <- getDefaultOutputDeviceID
     case maybeDevice of 
         Nothing       -> do
             putStrLn "Error getting the default output device"
-            return ()
+            return (Left InvalidDeviceId)
         Just deviceId -> do
             open <- openOutput deviceId 10
-            case open of
-                Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
-                Right stream -> do
-                    result <- importFile midiFile
-                    case result of
-                        Left err   -> putStrLn $ "Error loading MIDI file: " ++ err
-                        Right midi -> let events = sortOn (\(t, _) -> t) $ concat (tracks midi)
-                                    in sendMidiEvents stream (getPPQ midi) events
-                    _ <- close stream
-                    return ()
+            return open
+
+-- render audio of a given midi file
+playMidiFile :: FilePath -> IO ()
+playMidiFile midiFile = do
+    initialize
+    open <- openDevice
+    case open of
+        Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
+        Right stream -> do
+            result <- importFile midiFile
+            case result of
+                Left err   -> putStrLn $ "Error loading MIDI file: " ++ err
+                Right midi -> let events = sortOn (\(t, _) -> t) $ concat (tracks midi)
+                                in sendMidiEvents stream (getPPQ midi) events
+            _ <- close stream
+            return ()
+    _ <- terminate
+    return ()
+
+playMidi :: Midi -> IO ()
+playMidi midi = do
+    initialize
+    open <- openDevice
+    case open of
+        Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
+        Right stream -> do
+            let events = sortOn (\(t, _) -> t) $ concat (tracks midi)
+            sendMidiEvents stream (getPPQ midi) events
+            _ <- close stream
+            return ()
     _ <- terminate
     return ()
 

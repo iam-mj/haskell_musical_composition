@@ -18,8 +18,10 @@ cleanTrack = cleanT uncleanTrack
 
 trackE = interpret $ link [myGroup, myDuo, myChord]
 
+-- TODO: something weird happens if you try to play too many notes at the same time?
 m1 = music [trackE] 4 Violin
 m2 = music [trackE, trackE] 4 Violin
+m3 = music [trackE, trackE, trackE] 4 Violin
 
 p1 = perform m1
 p2 = perform m2

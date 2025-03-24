@@ -6,10 +6,13 @@ import MIDI.Performance
 import MIDI.InstrChannel
 import MIDI.Synthesizer
 
-playMusic :: Music -> FilePath -> IO ()
-playMusic music file = do
+saveMusic :: Music -> FilePath -> IO ()
+saveMusic music file = do
     exportFile file ((toMidi . perform) music)
     playMidiFile file
+
+playMusic :: Music -> IO ()
+playMusic = playMidi . toMidi . perform
 
 -- can't make them directly synthetiser-midi values cause we might want to export them
 -- turns a performance into a midi value: Midi fileType timeDev tracks
@@ -22,7 +25,7 @@ toMidi performance =
                 then SingleTrack 
                 else MultiTrack)
             (TicksPerBeat division)
-            (map (fromAbsTime . makeTrack icmap) pairs)
+            (map (addEnd . fromAbsTime . makeTrack icmap) pairs)
 
 division = 96 :: Int -- TODO: find out more about this
 
@@ -47,6 +50,15 @@ addAssociation key event list = newAssoc key event list []
             if key == inst then newAssoc inst event pairs ((key, event : events) : newList)
                            else newAssoc inst event pairs (current : newList)
 
+-- ticks after the last event after which comes the end of track
+-- in order to prevent unwanted clipping
+waitTillEnd = 96 :: Ticks
+
+-- add the end of track event
+-- TODO: test that when having multiple tracks (multiple instruments), one end of track doesn't affect the other
+addEnd :: [(Ticks, Message)] -> [(Ticks, Message)]
+addEnd msgList = msgList ++ [(waitTillEnd, TrackEnd)]
+
 -- we'll use the NoteOn, NoteOff, ProgramChange, TempoChange
 -- we'll have a track for each instrument
 makeTrack :: InstrumentChannelMap -> (Instrument, [MusicEvent]) -> [(Ticks, Message)]
@@ -65,7 +77,7 @@ makeMEvents ch (MEvent {eTime = t, ePitch = pth,
                         eDur = dur, eVol = v}) = ((toDelta t, NoteOn ch pth (limit v)),
                                                   (toDelta (t + dur), NoteOff ch pth (limit v)))
     where toDelta t = round (t * 2.0 * fromIntegral division) -- TODO: take better notes on toDelta
-          limit v = min 0 (max 127 (fromIntegral v))
+          limit v = max 0 (min 127 v)
 
 -- insert a midi event into a list of midi events so that the timestamps are in ascending order
 insertMEvent :: (Ticks, Message) -> [(Ticks, Message)] -> [(Ticks, Message)]
