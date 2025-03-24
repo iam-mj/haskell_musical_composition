@@ -3,7 +3,7 @@ module Music.Data where
 -- TODO: consider not exporting the constructors, just the constructor functions
 -- because only through the constructor functions can i check that certain conditions are met
 
-type Duration = Float -- where a whole note has a 1.0 duration, half a note has 0.5 ...
+type Duration = Double -- where a whole note has a 1.0 duration, half a note has 0.5 ...
 
 -- the "pitchToInt" function depends on these constructors
 data Pitch = A | B | C | D | E | F | G -- TODO: add more accessories?
@@ -43,6 +43,48 @@ data TrackE = EmptyET            -- nothing
             deriving Show
 
 type Octave = Int -- < 12
+
+-- adds a key to a track in order to make it playable
+-- as well as a instrument
+data Music = Music TrackE Octave Instrument
+            | Music ::: Music
+            deriving Show
+
+
+-- constructor functions
+note :: Pitch -> Duration -> Primitive
+note = Note
+rest :: Duration -> Primitive
+rest = Rest
+
+single :: Primitive -> Group
+single note@(Note _ _) = Single note
+single rest@(Rest _) = Single rest
+
+duo :: Interval -> Primitive -> Group
+duo interval note@(Note _ _) = Duo interval note
+duo _ _ = error "Can't make an interval with a rest root. Use a note instead or build a single."
+
+chord :: Chord -> Primitive -> Group
+chord chd note@(Note _ _) = Chord chd note
+chord _ _ = error "Can't make chords with a rest root. Use a note instead or build a single."
+
+track :: Group -> Track
+track = Prim
+
+music :: [TrackE] -> Octave -> Instrument -> Music
+music tracks octave instrument
+    | 0 <= octave && octave < 12 = let f music track = music ::: Music track octave instrument
+                                   in foldl f (Music (head tracks) octave instrument) (tail tracks)
+    | otherwise = error "Input octave is invalid. Make sure octave is a natural number and 0 <= octave < 12."
+
+
+-- standard durations
+bn, wn, hn, en, sn, tn, sfn :: Duration
+bn    = 2;     wn    = 1 
+hn    = 1/2;   qn    = 1/4
+en    = 1/8;   sn    = 1/16
+tn    = 1/32;  sfn   = 1/64
 
 -- from the midi standard
 data Instrument = 
@@ -90,37 +132,3 @@ data Instrument =
   |  BirdTweet              | TelephoneRing          | Helicopter
   |  Applause               | Gunshot                | Percussion
   deriving (Show, Eq)
-
--- adds a key to a track in order to make it playable
--- as well as a instrument
-data Music = Music TrackE Octave Instrument
-            | Music ::: Music
-            deriving Show
-
-
--- constructor functions
-note :: Pitch -> Duration -> Primitive
-note = Note
-rest :: Duration -> Primitive
-rest = Rest
-
-single :: Primitive -> Group
-single note@(Note _ _) = Single note
-single rest@(Rest _) = Single rest
-
-duo :: Interval -> Primitive -> Group
-duo interval note@(Note _ _) = Duo interval note
-duo _ _ = error "Can't make an interval with a rest root. Use a note instead or build a single."
-
-chord :: Chord -> Primitive -> Group
-chord chd note@(Note _ _) = Chord chd note
-chord _ _ = error "Can't make chords with a rest root. Use a note instead or build a single."
-
-track :: Group -> Track
-track = Prim
-
-music :: [TrackE] -> Octave -> Instrument -> Music
-music tracks octave instrument
-    | 0 <= octave && octave < 12 = let f music track = music ::: Music track octave instrument
-                                   in foldl f (Music (head tracks) octave instrument) (tail tracks)
-    | otherwise = error "Input octave is invalid. Make sure octave is a natural number and 0 <= octave < 12."

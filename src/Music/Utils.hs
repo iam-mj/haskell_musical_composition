@@ -11,12 +11,16 @@ linkT :: [Track] -> Track
 linkT [] = EmptyT
 linkT tracks = foldl1 (:+:) tracks
 
--- add to a track a sequence of repeating the same group / the same note
-repeatG :: Track -> Group -> Int -> Track
-repeatG track group n = track :+: link (replicate n group)
+-- repeat a track a number of times
+repeatT :: Int -> Track -> Track
+repeatT n track = linkT $ replicate n track
 
-repeatN :: Track -> Primitive -> Int -> Track
-repeatN track note = repeatG track (Single note)
+-- add to a track a sequence of repeating the same group / the same note
+repeatG :: Int -> Group -> Track -> Track
+repeatG n group track = track :+: link (replicate n group)
+
+repeatN :: Int -> Primitive -> Track -> Track
+repeatN n note track = repeatG n (Single note) track
 
 -- get primitive duration
 durationP :: Primitive -> Duration

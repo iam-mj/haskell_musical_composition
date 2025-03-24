@@ -19,8 +19,8 @@ data MusicEvent = MEvent {
     } deriving Show
 
 type Performance = [MusicEvent]
-type PTime = Float
-type DurT = Float
+type PTime = Double
+type DurT = Double
 
 defVolume = 64 :: Volume
 noParams = [] :: [Double]

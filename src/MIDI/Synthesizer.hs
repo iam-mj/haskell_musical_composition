@@ -30,8 +30,7 @@ playMidiFile midiFile = do
             result <- importFile midiFile
             case result of
                 Left err   -> putStrLn $ "Error loading MIDI file: " ++ err
-                Right midi -> let events = sortOn (\(t, _) -> t) $ concat (tracks midi)
-                                in sendMidiEvents stream (getPPQ midi) events
+                Right midi -> sendMidiEvents stream (getPPQ midi) (concat (tracks midi))
             _ <- close stream
             return ()
     _ <- terminate
@@ -44,8 +43,7 @@ playMidi midi = do
     case open of
         Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
         Right stream -> do
-            let events = sortOn (\(t, _) -> t) $ concat (tracks midi)
-            sendMidiEvents stream (getPPQ midi) events
+            sendMidiEvents stream (getPPQ midi) (concat (tracks midi)) -- TODO: this concat tracks won't work with more than one track!!
             _ <- close stream
             return ()
     _ <- terminate
