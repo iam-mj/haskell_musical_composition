@@ -20,11 +20,11 @@ repeatG :: Int -> Group -> Track -> Track
 repeatG n group track = track :+: link (replicate n group)
 
 repeatN :: Int -> Primitive -> Track -> Track
-repeatN n note track = repeatG n (Single note) track
+repeatN n note = repeatG n (Single note)
 
 -- get primitive duration
 durationP :: Primitive -> Duration
-durationP (Note _ dur) = dur
+durationP (Note _ dur _) = dur
 durationP (Rest dur) = dur
 
 -- get duration of a group
@@ -42,7 +42,7 @@ durationT (track1 :+: track2) = durationT track1 + durationT track2
 -- get duration of an extended track
 durationET :: TrackE -> Duration
 durationET EmptyET = 0
-durationET (PrimET (Note _ dur)) = dur
+durationET (PrimET (Note _ dur _)) = dur
 durationET (PrimET (Rest dur)) = dur
 durationET (track1 :++: track2) = durationET track1 + durationET track2
 durationET (track1 :::: track2) = max (durationET track1) (durationET track2) 
@@ -73,16 +73,18 @@ pitchToInt pitch = case pitch of
     Cf -> -1; Df -> 1; Ef -> 3; Ff -> 4; Gf -> 6; Af -> 8; Bf -> 10;
     Cs -> 1; Ds -> 3; Es -> 5; Fs -> 6; Gs -> 8; As -> 10; Bs -> 12
 
--- turn an int into a pitch class
-pitch :: Int -> Pitch
-pitch n = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
-          in pitches !! (n `mod` 12)
+-- turn an int into a pitch class and signal an octave change
+pitch :: Int -> OctaveChange -> (Pitch, OctaveChange)
+pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
+                     increase = n `div` 12
+          in (pitches !! (n `mod` 12), change + increase)
 
--- TODO: does not change the octave!!
 -- increase a note's pitch by n semitones
+-- if already an IncreaseOctave, gotta preserve it 
 transpose :: Int -> Primitive -> Primitive
 transpose n (Rest dur) = Rest dur -- no effect on a rest
-transpose n (Note ptch dur) = Note (pitch $ pitchToInt ptch + n) dur
+transpose n (Note ptch dur change) = let (newPitch, newChange) = pitch (pitchToInt ptch + n) change
+                                     in Note newPitch dur newChange
 
 -- get the intervals in semitones for a certain chord
 intervals :: Chord -> [Int]

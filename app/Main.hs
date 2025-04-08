@@ -28,9 +28,10 @@ p2 = perform m2
 
 -- let's try composing Merry-Go-Round of Life
 -- TODO: they're supposed to be en, but would sound kinda bad :)
-q1 = repeatT 3 $ link $ map (duo 2) [(note B qn), (note C qn)]
-q2 = repeatT 3 $ link $ map (duo 2) [(note A qn), (note B qn)]
-q3 = repeatT 3 $ link $ map (duo 2) [(note G qn), (note A qn)]
+-- TODO: bad that you always have to know how many semitones up you want to go?
+q1 = repeatT 3 $ link [duo 3 (note B qn), duo 4 (noteInc C qn)]
+q2 = repeatT 3 $ link [duo 3 (note A qn), duo 3 (note B qn)]
+q3 = repeatT 3 $ link [duo 4 (note G qn), duo 3 (note A qn)]
 tr1 = linkT [q1, q2, q3]
 
 mgr = music [interpret tr1] 4 AcousticGrandPiano

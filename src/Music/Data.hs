@@ -11,7 +11,9 @@ data Pitch = A | B | C | D | E | F | G -- TODO: add more accessories?
             | Af | Bf | Cf | Df | Ef | Ff | Gf 
             deriving Show
 
-data Primitive = Note Pitch Duration | Rest Duration
+type OctaveChange = Int
+
+data Primitive = Note Pitch Duration OctaveChange | Rest Duration
                 deriving Show
 
 type Interval = Int -- in semitones
@@ -53,20 +55,22 @@ data Music = Music TrackE Octave Instrument
 
 -- constructor functions
 note :: Pitch -> Duration -> Primitive
-note = Note
+note ptch dur = Note ptch dur 0
+noteInc :: Pitch -> Duration -> Primitive
+noteInc ptch dur = Note ptch dur 1
 rest :: Duration -> Primitive
 rest = Rest
 
 single :: Primitive -> Group
-single note@(Note _ _) = Single note
+single note@(Note _ _ _) = Single note
 single rest@(Rest _) = Single rest
 
 duo :: Interval -> Primitive -> Group
-duo interval note@(Note _ _) = Duo interval note
+duo interval note@(Note _ _ _) = Duo interval note
 duo _ _ = error "Can't make an interval with a rest root. Use a note instead or build a single."
 
 chord :: Chord -> Primitive -> Group
-chord chd note@(Note _ _) = Chord chd note
+chord chd note@(Note _ _ _) = Chord chd note
 chord _ _ = error "Can't make chords with a rest root. Use a note instead or build a single."
 
 track :: Group -> Track

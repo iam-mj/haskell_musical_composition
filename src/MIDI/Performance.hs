@@ -28,11 +28,10 @@ emptyPitch = 0 :: AbsPitch
 
 -- TODO: add context at one point + tempo & metro
 
-
--- should always be between 0-127
+-- should always be between 0-127!!
 -- middle C (C, 4) should be 60
-absPitch :: Pitch -> Octave -> AbsPitch
-absPitch pit octave = (octave + 1) * 12 + pitchToInt pit
+absPitch :: Pitch -> Octave -> OctaveChange -> AbsPitch
+absPitch pit octave change = max 0 . min 127 $ (octave + 1 + change) * 12 + pitchToInt pit
 
 -- merge 2 performances into 1, so that the events are in ascending order by the timestamp
 merge :: Performance -> Performance -> Performance
@@ -44,13 +43,12 @@ merge p1@(e1 : es1) p2@(e2 : es2)
 
 -- transforms a music piece into a performance (<=> an event list)
 perform :: Music -> Performance
-perform (Music trackE octave instr) = 
-    let perf trE oct ins time = case trE of
-            EmptyET                 -> return $ MEvent time ins 0 0 0 []
-            PrimET (Note pit dur)   -> return $ MEvent time ins (absPitch pit oct) dur defVolume noParams
-            PrimET (Rest dur)       -> return $ MEvent time ins emptyPitch dur defVolume noParams
-            trackE1 :++: trackE2    -> perf trackE1 oct ins time ++ perf trackE2 oct ins (time + durationET trackE1)
-            trackE1 :::: trackE2    -> merge (perf trackE1 oct ins time) (perf trackE2 oct ins time)
-    in perf trackE octave instr 0
+perform (Music trackE octave instr) = perf trackE octave instr 0
+    where perf trE oct ins time = case trE of
+            EmptyET                        -> return $ MEvent time ins 0 0 0 []
+            PrimET (Note pit dur change)   -> return $ MEvent time ins (absPitch pit oct change) dur defVolume noParams
+            PrimET (Rest dur)              -> return $ MEvent time ins emptyPitch dur defVolume noParams
+            trackE1 :++: trackE2           -> perf trackE1 oct ins time ++ perf trackE2 oct ins (time + durationET trackE1)
+            trackE1 :::: trackE2           -> merge (perf trackE1 oct ins time) (perf trackE2 oct ins time)
 perform (music1 ::: music2) = merge (perform music1) (perform music2)
 
