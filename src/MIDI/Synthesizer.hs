@@ -8,6 +8,8 @@ import Data.Maybe (fromJust)
 
 defTempo = 500000 :: Int
 
+-- TODO: i have a slight feeling that the rendering isn't done correctly...
+
 openDevice :: IO (Either PMError PMStream)
 openDevice = do
     maybeDevice <- getDefaultOutputDeviceID
@@ -16,8 +18,7 @@ openDevice = do
             putStrLn "Error getting the default output device"
             return (Left InvalidDeviceId)
         Just deviceId -> do
-            open <- openOutput deviceId 10
-            return open
+            openOutput deviceId 10
 
 -- render audio of a given midi file
 playMidiFile :: FilePath -> IO ()
@@ -25,7 +26,7 @@ playMidiFile midiFile = do
     initialize
     open <- openDevice
     case open of
-        Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
+        Left err     -> putStrLn "Error opening the default device" -- TODO: print error somehow
         Right stream -> do
             result <- importFile midiFile
             case result of
@@ -41,7 +42,7 @@ playMidi midi = do
     initialize
     open <- openDevice
     case open of
-        Left err     -> putStrLn $ "Error opening the default device" -- TODO: print error somehow
+        Left err     -> putStrLn "Error opening the default device" -- TODO: print error somehow
         Right stream -> do
             sendMidiEvents stream (getPPQ midi) (concat (tracks midi)) -- TODO: this concat tracks won't work with more than one track!!
             _ <- close stream

@@ -7,9 +7,7 @@ import MIDI.InstrChannel
 import MIDI.Synthesizer
 
 saveMusic :: Music -> FilePath -> IO ()
-saveMusic music file = do
-    exportFile file ((toMidi . perform) music)
-    playMidiFile file
+saveMusic music file = exportFile file ((toMidi . perform) music)
 
 playMusic :: Music -> IO ()
 playMusic = playMidi . toMidi . perform
