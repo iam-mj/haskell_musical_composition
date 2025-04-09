@@ -84,7 +84,7 @@ music tracks octave instrument
 
 
 -- standard durations
-bn, wn, hn, en, sn, tn, sfn :: Duration
+bn, wn, hn, qn, en, sn, tn, sfn :: Duration
 bn    = 2;     wn    = 1 
 hn    = 1/2;   qn    = 1/4
 en    = 1/8;   sn    = 1/16

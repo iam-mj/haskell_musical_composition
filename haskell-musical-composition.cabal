@@ -29,6 +29,8 @@ library
         MIDI.ToMIDI
         MIDI.InstrChannel
         MIDI.Synthesizer
+        Input.Parser
+        Input.Lexer
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -38,7 +40,8 @@ library
     build-depends:    
         base ^>=4.17.2.0,
         HCodecs ^>=0.5.2,
-        PortMidi ^>=0.2.0
+        PortMidi ^>=0.2.0,
+        parsec
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -54,6 +57,7 @@ executable haskell-musical-composition
         base ^>=4.17.2.0,
         HCodecs ^>=0.5.2,
         PortMidi ^>=0.2.0,
+        parsec,
         haskell-musical-composition
 
     hs-source-dirs:   app
