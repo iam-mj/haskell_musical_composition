@@ -18,3 +18,7 @@ stringToDuration = [("bn", bn), ("wn", wn), ("hn", hn), ("qn", qn),
 -- TODO: i have very few chords... also what about the custom chords?
 stringToChord :: [(String, Chord)]
 stringToChord = [("maj3", MajorThird), ("min3", MinorThird)]
+
+-- TODO: add some more - maybe keep the names closer to the originals
+stringToInstrument :: [(String, Instrument)]
+stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano)]
