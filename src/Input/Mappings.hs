@@ -1,6 +1,16 @@
 module Input.Mappings where
 
 import Music.Data
+import Text.Parsec.String
+import Text.Parsec
+import Data.Maybe
+import Input.State
+
+-- parse a string from an assciation list and return it's associated value
+mapString :: [(String, a)] -> MyParser a
+mapString list = do
+    key <- choice (map ((try . string) . fst) list)
+    return $ fromJust $ lookup key list
 
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("A", A), ("Ab", Af), ("A#", As),

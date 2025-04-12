@@ -1,243 +1,230 @@
 module Input.Parser where
 
-import Input.Lexer
+import Input.Fundamental
 import Input.Mappings
+import Input.State
 import Music.Data
 import Music.Utils
+
 import Text.Parsec
-import Text.Parsec.String
-import Text.Parsec.Expr
-import Text.Parsec.Token
-import Text.Parsec.Language
-import qualified Text.Parsec.Token as Lex
-import Control.Exception (NonTermination)
 import Data.Maybe
-import GHC.IORef (atomicModifyIORefP)
+import Control.Monad.IO.Class (liftIO)
 
--- end of line
-eol :: Parser Char
-eol = char '\n'
-
--- TODO: gotta store this also!!
-musicParser :: Parser TrackE
+-- parse the music definition, then add it to the current state
+musicParser :: MyParser ()
 musicParser = do
-    myReserved "music"
-    musicName <- myIdentifier
-    myBraces (eol >> musicDefinition)
+    string "music"
+    name <- identifier -- TODO: check that the name is unique
+    music <- braces (eol >> musicDefinition)
+    eol
+    modifyState $ addTrack name music
+    return ()
 
-musicDefinition :: Parser TrackE
+musicDefinition :: MyParser TrackE
 musicDefinition = do
     groups <- many groups
     return $ interpret $ link $ concat groups
 
--- TODO: maybe Line names instead?
-groups :: Parser [Group]
-groups = noteP <|> restP <|> duoP <|> chordP
+groups :: MyParser [Group]
+groups = noteLine <|> restLine <|> duoLine <|> chordLine
 
-noteP :: Parser [Group]
-noteP = do
-    myReserved "note:"
-    notes <- myCommaSep1 oneNote
+noteLine :: MyParser [Group]
+noteLine = do
+    string "note:"
+    notes <- commaSep oneNote    -- TODO: test if it parses and just one note!
     rep   <- optionMaybe repLine -- TODO: do something with this!!
     eol
     return $ map Single notes
 
-oneNote :: Parser Primitive
+oneNote :: MyParser Primitive
 oneNote = do
     (pitch, ch) <- pitchP
-    dur <- durP
+    dur         <- durP
     return (Note pitch dur ch)
 
-pitchP :: Parser (Pitch, OctaveChange)
+pitchP :: MyParser (Pitch, OctaveChange)
 pitchP = do
     pitch <- pitchClass
-    ch <- myParens change
+    ch    <- parens change
     return (pitch, fromIntegral ch)
-    where change = (char '+' >> myInteger) <|> myInteger -- TODO: make sure it parses the "-" ok
+    where change = (char '+' >> int) <|> int -- TODO: make sure it parses the "-" ok
           pitchClass = mapString stringToPitch
 
--- parse a string from an assciation list and return it's associated value
-mapString :: [(String, a)] -> Parser a
-mapString list = do
-    key <- choice (map ((try . string) . fst) list)
-    return $ fromJust $ lookup key list
-
-durP :: Parser Duration
+durP :: MyParser Duration
 durP = do
     dur <- mapString stringToDuration
     rep <- optionMaybe rep -- TODO: do something with this! send it out of the parser
     return dur
 
-restP :: Parser [Group]
-restP = do
-    myReserved "rest:"
+restLine :: MyParser [Group]
+restLine = do
+    string "rest:"
     rest <- durP
     rep  <- optionMaybe repLine
     eol
     return [(Single . Rest) rest]
 
-duoP :: Parser [Group]
-duoP = do
-    myReserved "duo:"
-    duos <- myCommaSep1 oneDuo
+duoLine :: MyParser [Group]
+duoLine = do
+    string "duo:"
+    duos <- commaSep oneDuo
     rep  <- optionMaybe repLine
     eol
     return $ map (uncurry Duo) duos
 
-oneDuo :: Parser (Interval, Primitive)
+oneDuo :: MyParser (Interval, Primitive)
 oneDuo = do
-    int  <- myInteger -- TODO: in my grammar example the interval was not an integer, make up your mind!
+    int  <- int -- TODO: in my grammar example the interval was not an integer, make up your mind!
     note <- oneNote
-    return (fromInteger int, note)
+    return (int, note)
 
-chordP :: Parser [Group]
-chordP = do
-    myReserved "chord:"
-    chords <- myCommaSep1 oneChord
+chordLine :: MyParser [Group]
+chordLine = do
+    string "chord:"
+    chords <- commaSep oneChord
     rep    <- optionMaybe repLine
     eol
     return $ map (uncurry Chord) chords
 
-oneChord :: Parser (Chord, Primitive)
+oneChord :: MyParser (Chord, Primitive)
 oneChord = do
     chord <- mapString stringToChord
     note <- oneNote
     return (chord, note)
 
 -- TODO: fix the '/' case + make sure it deals okay with these partial cases
-repLine :: Parser Integer
-repLine = (char '/' >> return 0) <|> myParens rep <|> (char '/' >> myParens rep)
+repLine :: MyParser Int
+repLine = (char '/' >> return 0) <|> parens rep <|> (char '/' >> parens rep)
 
-rep :: Parser Integer
-rep = do
-    char 'x'
-    myInteger
+rep :: MyParser Int
+rep = char 'x' >> int
 
-show :: Parser ()
+show :: MyParser ()
 show = do
-    myReserved "show"
-    char ' '
-    name <- myIdentifier -- TODO: gotta actually print this music variable!!
+    string "show"
+    spaces
+    name  <- identifier
+    state <- getState
     eol
+    liftIO $ printValue state name
     return ()
 
--- TODO: all the char ' ' are necessary?
-context :: Parser Music
+context :: MyParser Music
 context = do
-    myReserved "context"
-    char ' '
-    name <- myIdentifier
+    string "context"
+    spaces
+    name <- identifier
     let tracks = getMusic name -- TODO: handle exception!
-    char ' '
-    oct <- myInteger
-    char ' '
+    spaces
+    oct <- int
+    spaces
     instrument <- mapString stringToInstrument
     eol
-    return $ Music tracks (fromInteger oct) instrument --TODO: actually save this!!
+    return $ Music tracks oct instrument --TODO: actually save this!!
 
 -- TODO: will have to pass the variables dictionary
 getMusic :: String -> TrackE
 getMusic = undefined
 
-play :: Parser ()
+play :: MyParser ()
 play = do
-    myReserved "play"
-    char ' '
-    name <- myIdentifier
+    string "play"
+    spaces
+    name <- identifier
     -- TODO: actually get it, check it's music and play it
     eol
     return ()
 
-save :: Parser ()
+save :: MyParser ()
 save = do
-    myReserved "save"
-    char ' '
-    name <- myIdentifier
+    string "save"
+    spaces
+    name <- identifier
     -- TODO: get it & check it's music
-    char ' '
+    spaces
     fileName <- noneOf "\n "
     eol
     -- TODO: try to save or print error
     return ()
 
-modify :: Parser ()
+modify :: MyParser ()
 modify = do
-    myReserved "modify"
-    char ' '
-    name <- myIdentifier
+    string "modify"
+    spaces
+    name <- identifier
     -- TODO: get the music
-    char ' '
+    spaces
     modifyOp 
     eol
     return ()
 
-modifyOp :: Parser ()
+modifyOp :: MyParser ()
 modifyOp = insert <|> delete <|> replace <|> parallelize <|> seque <|> trans
 
-insert :: Parser ()
+insert :: MyParser ()
 insert = do
-    myReserved "insert"
-    char ' '
+    string "insert"
+    spaces
     id <- index
-    char ' '
-    insertValue <- myIdentifier
+    spaces
+    insertValue <- identifier
     -- TODO: check and get insert value + also actually do the insert
     return ()
 
-delete :: Parser ()
+delete :: MyParser ()
 delete = do
-    myReserved "delete"
-    char ' '
+    string "delete"
+    spaces
     idxs <- indexes 
     -- TODO: delete the indexes
     return ()
 
-replace :: Parser ()
+replace :: MyParser ()
 replace = do
-    myReserved "replace"
-    char ' '
+    string "replace"
+    spaces
     idxs <- indexes
-    char ' '
-    replaceValue <- myIdentifier
+    spaces
+    replaceValue <- identifier
     -- TODO: replace the indexes
     return ()
 
-index :: Parser Integer
-index = myInteger
+index :: MyParser Int
+index = int
 
 -- TODO: make sure it parses it right
-indexes :: Parser [Integer]
+indexes :: MyParser [Int]
 indexes = do
-    int <- myInteger
+    int <- int
     return [int] 
     <|> do
-    left <- myInteger
+    left <- int
     char '-'
-    right <- myInteger
+    right <- int
     return [left, right]
 
-parallelize :: Parser ()
+parallelize :: MyParser ()
 parallelize = do
-    myReservedOp "||"
-    char ' '
-    name <- myIdentifier
+    string "||"
+    spaces
+    name <- identifier
     -- TODO: get it and parallelize it
     return ()
 
 -- very awkward name but others clashed with Prelude functions
-seque :: Parser ()
+seque :: MyParser ()
 seque = do
-    myReservedOp "++"
-    num <- optionMaybe myInteger -- TODO: handle repeated sequencing
-    char ' '
-    name <- myIdentifier
+    string "++"
+    num <- optionMaybe int -- TODO: handle repeated sequencing
+    spaces
+    name <- identifier
     -- TODO: actually sequence
     return ()
 
-trans :: Parser ()
+trans :: MyParser ()
 trans = do
-    myReserved "transpose"
-    char ' '
-    num <- myInteger
+    string "transpose"
+    spaces
+    num <- int
     -- TODO: actually transpose with that number or semi-tones
     return ()
