@@ -156,80 +156,112 @@ modify :: MyParser ()
 modify = do
     string "modify"
     spaces
-    name <- identifier
-    -- TODO: get the music
+    name  <- identifier
     spaces
-    modifyOp 
+    choice $ modifyOp name 
     eol
     return ()
 
-modifyOp :: MyParser ()
-modifyOp = insert <|> delete <|> replace <|> parallelize <|> seque <|> trans
+modifyOp :: String -> [MyParser ()]
+modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
 
-insert :: MyParser ()
-insert = do
+-- will insert at a certain group index
+-- will have the show print the index of each group as well to make modifying easy
+insert :: String -> MyParser ()
+insert name = do
     string "insert"
     spaces
-    id <- index
+    idx <- index
     spaces
-    insertValue <- identifier
-    -- TODO: check and get insert value + also actually do the insert
+    insertName <- identifier
+    state      <- getState
+    let Right insert = getTrack state insertName
+        Right track  = getTrack state name
+        newTrack     = insertT track idx insert
+    modifyState $ updateTrack name newTrack
     return ()
 
-delete :: MyParser ()
-delete = do
+-- TODO: check it works on all indexes: first, last, middle, sequence
+delete :: String -> MyParser ()
+delete name = do
     string "delete"
     spaces
-    idxs <- indexes 
-    -- TODO: delete the indexes
+    idxs  <- indexes 
+    state <- getState
+    let Right track = getTrack state name
+        newTrack    = deleteT track idxs
+    modifyState $ updateTrack name newTrack
     return ()
 
-replace :: MyParser ()
-replace = do
+replace :: String -> MyParser ()
+replace name = do
     string "replace"
     spaces
     idxs <- indexes
     spaces
-    replaceValue <- identifier
-    -- TODO: replace the indexes
+    replaceName <- identifier
+    state       <- getState
+    let Right track     = getTrack state name
+        Right replaceTr = getTrack state replaceName
+        newTrack        = replaceT track idxs replaceTr
+    modifyState $ updateTrack name newTrack 
     return ()
 
 index :: MyParser Int
 index = int
 
 -- TODO: make sure it parses it right
-indexes :: MyParser [Int]
+-- TODO: should check that the idexes are positive
+indexes :: MyParser (Int, Maybe Int)
 indexes = do
     int <- int
-    return [int] 
+    return (int, Nothing)
     <|> do
     left <- int
     char '-'
     right <- int
-    return [left, right]
+    return (left, Just right)
 
-parallelize :: MyParser ()
-parallelize = do
+-- only for Music values
+parallelize :: String -> MyParser ()
+parallelize name = do
     string "||"
     spaces
-    name <- identifier
-    -- TODO: get it and parallelize it
+    paraName <- identifier
+    state    <- getState
+    let Right music     = getMusic state name
+        Right paraMusic = getMusic state paraName
+        newMusic        = music ::: paraMusic
+    modifyState $ updateMusic name newMusic
     return ()
 
 -- very awkward name but others clashed with Prelude functions
-seque :: MyParser ()
-seque = do
+-- only for tracks
+seque :: String -> MyParser ()
+seque name = do
     string "++"
-    num <- optionMaybe int -- TODO: handle repeated sequencing
+    num <- optionMaybe int
     spaces
-    name <- identifier
-    -- TODO: actually sequence
+    seqName <- identifier
+    state   <- getState
+    let Right track = getTrack state name
+        Right seqTr = getTrack state seqName
+        newTrack    = addRepeatT track seqTr num
+    modifyState $ updateTrack name newTrack
     return ()
 
-trans :: MyParser ()
-trans = do
+-- for both tracks and music
+trans :: String -> MyParser ()
+trans name = do
     string "transpose"
     spaces
-    num <- int
-    -- TODO: actually transpose with that number or semi-tones
+    num   <- int
+    state <- getState
+    let value    = getValue state name
+        newValue = transposeValue value num
+    case newValue of
+        Left _          -> return ()
+        Right structure -> case structure of
+            Left track  -> modifyState $ updateTrack name track
+            Right music -> modifyState $ updateMusic name music 
     return ()

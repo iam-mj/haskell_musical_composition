@@ -45,7 +45,60 @@ durationET EmptyET = 0
 durationET (PrimET (Note _ dur _)) = dur
 durationET (PrimET (Rest dur)) = dur
 durationET (track1 :++: track2) = durationET track1 + durationET track2
-durationET (track1 :::: track2) = max (durationET track1) (durationET track2) 
+durationET (track1 :::: track2) = max (durationET track1) (durationET track2)
+
+-- get the list of groups inside a track
+unlink :: Track -> [Group]
+unlink EmptyT                   = []
+unlink (Prim single@(Single _)) = [single]
+unlink (Prim duo@(Duo _ _))     = [duo]
+unlink (Prim chord@(Chord _ _)) = [chord]
+unlink (track1 :+: track2)      = unlink track1 ++ unlink track2
+
+-- insert a track inside another track at a certain position
+insertT :: Track -> Int -> Track -> Track
+insertT track idx insertTr =
+    let groupsTrack = unlink track
+        groupsInsert = unlink insertTr
+    in link $ insertG groupsTrack idx groupsInsert 0
+    where
+        insertG [] _ groupsInsert _ = groupsInsert
+        insertG (g : gs) idx groupsInsert n
+            | n == idx  = groupsInsert ++ (g : gs)
+            | otherwise = g : insertG gs idx groupsInsert (n + 1)
+
+-- delete one group from a list of groups 
+deleteG1 :: [Group] -> Int -> Int -> [Group]
+deleteG1 [] _ _ = []
+deleteG1 (g : gs) idx n
+    | idx == n  = gs
+    | otherwise = g : deleteG1 gs idx (n + 1)
+
+-- delete a series of consecutive groups from a list
+deleteGM :: [Group] -> Int -> Int -> Int -> [Group]
+deleteGM [] _ _ _ = []
+deleteGM (g : gs) left right n
+    | left <= n && n <= right = deleteGM gs left right (n + 1)
+    | n > right               = g : gs
+    | otherwise               = g : deleteGM gs left right (n + 1)
+
+-- delete the groups inside a track at certain indexes
+deleteT :: Track -> (Int, Maybe Int) -> Track
+deleteT track (l, r) = let groups = case r of
+                                Nothing -> deleteG1 (unlink track) l 0
+                                Just r  -> deleteGM (unlink track) l r 0
+                       in link groups
+
+-- replace the groups inside a track at certain indexes with the groups of another track
+replaceT :: Track -> (Int, Maybe Int) -> Track -> Track
+replaceT track (l, r) replaceTr = let afterDeleteTr = deleteT track (l, r)
+                                  in insertT afterDeleteTr l replaceTr
+
+-- add a track a number of times to another track
+addRepeatT :: Track -> Track -> Maybe Int -> Track
+addRepeatT track addTr num = case num of
+                                Nothing -> track :+: addTr
+                                Just nr -> track :+: repeatT nr addTr
 
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track
@@ -86,6 +139,28 @@ transpose n (Rest dur) = Rest dur -- no effect on a rest
 transpose n (Note ptch dur change) = let (newPitch, newChange) = pitch (pitchToInt ptch + n) change
                                      in Note newPitch dur newChange
 
+-- transpose a group with a number of semintones
+transposeG :: Int -> Group -> Group
+transposeG num (Single prim)   = Single $ transpose num prim
+transposeG num (Duo int prim)  = Duo int $ transpose num prim
+transposeG num (Chord ch prim) = Chord ch $ transpose num prim
+
+-- transpose a track with a number of semitones
+transposeT :: Track -> Int -> Track
+transposeT track num = link $ map (transposeG num) $ unlink track
+
+-- transpose an extended track with a number of semitones
+transposeTE :: TrackE -> Int -> TrackE
+transposeTE EmptyET _          = EmptyET
+transposeTE (PrimET prim) num  = PrimET $ transpose num prim
+transposeTE (tr1 :++: tr2) num = transposeTE tr1 num :++: transposeTE tr2 num
+transposeTE (tr1 :::: tr2) num = transposeTE tr1 num :::: transposeTE tr2 num
+
+-- transpose music with a number of semitones
+transposeM :: Music -> Int -> Music
+transposeM (Music track oct inst) num = Music (transposeTE track num) oct inst
+transposeM (music1 ::: music2) num    = transposeM music1 num ::: transposeM music2 num
+
 -- get the intervals in semitones for a certain chord
 intervals :: Chord -> [Int]
 intervals MajorThird = [0, 4, 7]
@@ -100,6 +175,6 @@ interpret track = interpretT $ cleanT track
 interpretT :: Track -> TrackE
 interpretT EmptyT = EmptyET
 interpretT (Prim (Single prim)) = PrimET prim
-interpretT (Prim (Duo int note)) = PrimET note :::: PrimET (transpose int note) 
+interpretT (Prim (Duo int note)) = PrimET note :::: PrimET (transpose int note)
 interpretT (Prim (Chord chord note)) = foldl (\notes int -> notes :::: PrimET (transpose int note)) (PrimET note) (tail $ intervals chord)
 interpretT (track1 :+: track2) = interpretT track1 :++: interpretT track2
