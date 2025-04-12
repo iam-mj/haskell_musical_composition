@@ -9,6 +9,7 @@ import Music.Utils
 import Text.Parsec
 import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
+import MIDI.ToMIDI
 
 -- parse the music definition, then add it to the current state
 musicParser :: MyParser ()
@@ -109,30 +110,33 @@ show = do
     liftIO $ printValue state name
     return ()
 
-context :: MyParser Music
+-- TODO: check exception throws okay
+context :: MyParser ()
 context = do
     string "context"
     spaces
-    name <- identifier
-    let tracks = getMusic name -- TODO: handle exception!
+    name      <- identifier
+    musicName <- identifier -- TODO: check that it's unique
+    state     <- getState
     spaces
     oct <- int
     spaces
     instrument <- mapString stringToInstrument
     eol
-    return $ Music tracks oct instrument --TODO: actually save this!!
-
--- TODO: will have to pass the variables dictionary
-getMusic :: String -> TrackE
-getMusic = undefined
+    let Right track = getTrack state name
+    let music = Music track oct instrument
+    modifyState $ addMusic musicName music
+    return ()
 
 play :: MyParser ()
 play = do
     string "play"
     spaces
-    name <- identifier
-    -- TODO: actually get it, check it's music and play it
+    name  <- identifier
+    state <- getState
     eol
+    let Right music = getMusic state name
+    liftIO $ playMusic music
     return ()
 
 save :: MyParser ()
@@ -140,11 +144,12 @@ save = do
     string "save"
     spaces
     name <- identifier
-    -- TODO: get it & check it's music
     spaces
-    fileName <- noneOf "\n "
+    fileName <- many $ noneOf "\n "
     eol
-    -- TODO: try to save or print error
+    state <- getState
+    let Right music = getMusic state name
+    liftIO $ saveMusic music fileName -- TODO: maybe some kind of exception if file name is weird
     return ()
 
 modify :: MyParser ()

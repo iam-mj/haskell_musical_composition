@@ -17,6 +17,19 @@ emptyState = PState [] []
 addTrack :: String -> TrackE -> ParsingState -> ParsingState
 addTrack name track state = state {tracks = (name, track) : tracks state}
 
+addMusic :: String -> Music -> ParsingState -> ParsingState
+addMusic name music state = state {melodies = (name, music) : melodies state}
+
+getTrack :: ParsingState -> String -> Either (IO ()) TrackE
+getTrack state name = case lookup name (tracks state) of
+                        Nothing    -> Left $ error "No tracks found with the given name!"
+                        Just track -> Right track
+
+getMusic :: ParsingState -> String -> Either (IO ()) Music
+getMusic state name = case lookup name (melodies state) of
+                        Nothing    -> Left $ error "No melodies found with the given name!"
+                        Just music -> Right music
+
 -- find in the state the value of the identifier provided
 getValue :: ParsingState -> String -> (Maybe TrackE, Maybe Music)
 getValue state name = (lookup name (tracks state), lookup name (melodies state))
