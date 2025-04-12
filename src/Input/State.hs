@@ -7,20 +7,20 @@ import Text.Parsec
 type MyParser = ParsecT String ParsingState IO
 
 data ParsingState = PState {
-    tracks :: [(String, TrackE)],  -- variables which were just defined
+    tracks :: [(String, Track)],  -- variables which were just defined
     melodies :: [(String, Music)]  -- variables which were given context & are ready to be played and saved
 }
 
 emptyState :: ParsingState
 emptyState = PState [] []
 
-addTrack :: String -> TrackE -> ParsingState -> ParsingState
+addTrack :: String -> Track -> ParsingState -> ParsingState
 addTrack name track state = state {tracks = (name, track) : tracks state}
 
 addMusic :: String -> Music -> ParsingState -> ParsingState
 addMusic name music state = state {melodies = (name, music) : melodies state}
 
-getTrack :: ParsingState -> String -> Either (IO ()) TrackE
+getTrack :: ParsingState -> String -> Either (IO ()) Track
 getTrack state name = case lookup name (tracks state) of
                         Nothing    -> Left $ error "No tracks found with the given name!"
                         Just track -> Right track
@@ -31,7 +31,7 @@ getMusic state name = case lookup name (melodies state) of
                         Just music -> Right music
 
 -- find in the state the value of the identifier provided
-getValue :: ParsingState -> String -> (Maybe TrackE, Maybe Music)
+getValue :: ParsingState -> String -> (Maybe Track, Maybe Music)
 getValue state name = (lookup name (tracks state), lookup name (melodies state))
 
 printValue :: ParsingState -> String -> IO ()

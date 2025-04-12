@@ -16,15 +16,15 @@ musicParser :: MyParser ()
 musicParser = do
     string "music"
     name <- identifier -- TODO: check that the name is unique
-    music <- braces (eol >> musicDefinition)
+    track <- braces (eol >> musicDefinition)
     eol
-    modifyState $ addTrack name music
+    modifyState $ addTrack name track
     return ()
 
-musicDefinition :: MyParser TrackE
+musicDefinition :: MyParser Track
 musicDefinition = do
     groups <- many groups
-    return $ interpret $ link $ concat groups
+    return $ link $ concat groups
 
 groups :: MyParser [Group]
 groups = noteLine <|> restLine <|> duoLine <|> chordLine
@@ -124,7 +124,7 @@ context = do
     instrument <- mapString stringToInstrument
     eol
     let Right track = getTrack state name
-    let music = Music track oct instrument
+    let music = Music (interpret track) oct instrument
     modifyState $ addMusic musicName music
     return ()
 
