@@ -10,7 +10,7 @@ type MyParser = ParsecT String ParsingState IO
 data ParsingState = PState {
     tracks :: [(String, Track)],  -- variables which were just defined
     melodies :: [(String, Music)]  -- variables which were given context & are ready to be played and saved
-}
+} deriving Show
 
 emptyState :: ParsingState
 emptyState = PState [] []
@@ -21,6 +21,7 @@ addTrack name track state = state {tracks = (name, track) : tracks state}
 addMusic :: String -> Music -> ParsingState -> ParsingState
 addMusic name music state = state {melodies = (name, music) : melodies state}
 
+-- TODO: putStrLn instead of error, it doesn't seem to trigger
 getTrack :: ParsingState -> String -> Either (IO ()) Track
 getTrack state name = case lookup name (tracks state) of
                         Nothing    -> Left $ error "No tracks found with the given name!"

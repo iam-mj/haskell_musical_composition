@@ -3,19 +3,34 @@ module Input.Parser where
 import Input.Fundamental
 import Input.Mappings
 import Input.State
+import MIDI.ToMIDI
 import Music.Data
 import Music.Utils
 
 import Text.Parsec
 import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
-import MIDI.ToMIDI
+import Text.Parsec.Token (comma)
+import Prelude hiding (show)
+
+-- TODO: TASK 1 - check music & tracks have unique names each time
+-- TODO: TASK 2 - repLine functionality
+-- TODO: TASK 3 - repLine parser okay?
+-- TODO: TASK 4 - exception if filename weird
+-- TODO: TASK 5 - check that indexes are positive
+
+mainParser :: MyParser ParsingState
+mainParser = do
+    choice $ map try [musicParser, show, context, save, play, modify]
+    getState
 
 -- parse the music definition, then add it to the current state
 musicParser :: MyParser ()
 musicParser = do
     string "music"
-    name <- identifier -- TODO: check that the name is unique
+    spaces
+    name <- identifier -- FIXME: TASK 1
+    spaces
     track <- braces (eol >> musicDefinition)
     eol
     modifyState $ addTrack name track
@@ -27,39 +42,49 @@ musicDefinition = do
     return $ link $ concat groups
 
 groups :: MyParser [Group]
-groups = noteLine <|> restLine <|> duoLine <|> chordLine
+groups = choice $ map try [noteLine, restLine, duoLine, chordLine]
 
 noteLine :: MyParser [Group]
 noteLine = do
     string "note:"
-    notes <- commaSep oneNote    -- TODO: test if it parses and just one note!
-    rep   <- optionMaybe repLine -- TODO: do something with this!!
+    spaces
+    notes <- commaSep oneNote
+    rep   <- optionMaybe repLine -- FIXME: TASK 2
     eol
+    spaces
     return $ map Single notes
 
 oneNote :: MyParser Primitive
 oneNote = do
+    spaces
     (pitch, ch) <- pitchP
     dur         <- durP
     return (Note pitch dur ch)
 
+noChange = 0 :: OctaveChange
+
 pitchP :: MyParser (Pitch, OctaveChange)
 pitchP = do
     pitch <- pitchClass
-    ch    <- parens change
-    return (pitch, fromIntegral ch)
-    where change = (char '+' >> int) <|> int -- TODO: make sure it parses the "-" ok
+    spaces
+    ch    <- optionMaybe $ parens change
+    case ch of
+        Nothing -> return (pitch, noChange)
+        Just ch -> return (pitch, fromIntegral ch)
+    where change = (char '+' >> int) <|> int
           pitchClass = mapString stringToPitch
 
 durP :: MyParser Duration
 durP = do
+    spaces
     dur <- mapString stringToDuration
-    rep <- optionMaybe rep -- TODO: do something with this! send it out of the parser
+    rep <- optionMaybe rep -- FIXME: TASK 2
     return dur
 
 restLine :: MyParser [Group]
 restLine = do
     string "rest:"
+    spaces
     rest <- durP
     rep  <- optionMaybe repLine
     eol
@@ -71,10 +96,12 @@ duoLine = do
     duos <- commaSep oneDuo
     rep  <- optionMaybe repLine
     eol
+    spaces
     return $ map (uncurry Duo) duos
 
 oneDuo :: MyParser (Interval, Primitive)
 oneDuo = do
+    spaces
     int  <- int -- TODO: in my grammar example the interval was not an integer, make up your mind!
     note <- oneNote
     return (int, note)
@@ -85,15 +112,17 @@ chordLine = do
     chords <- commaSep oneChord
     rep    <- optionMaybe repLine
     eol
+    spaces
     return $ map (uncurry Chord) chords
 
 oneChord :: MyParser (Chord, Primitive)
 oneChord = do
+    spaces
     chord <- mapString stringToChord
-    note <- oneNote
+    note  <- oneNote
     return (chord, note)
 
--- TODO: fix the '/' case + make sure it deals okay with these partial cases
+-- FIXME: TASK 3
 repLine :: MyParser Int
 repLine = (char '/' >> return 0) <|> parens rep <|> (char '/' >> parens rep)
 
@@ -110,13 +139,13 @@ show = do
     liftIO $ printValue state name
     return ()
 
--- TODO: check exception throws okay
 context :: MyParser ()
 context = do
     string "context"
     spaces
     name      <- identifier
-    musicName <- identifier -- TODO: check that it's unique
+    spaces
+    musicName <- identifier -- FIXME: TASK 1
     state     <- getState
     spaces
     oct <- int
@@ -149,7 +178,7 @@ save = do
     eol
     state <- getState
     let Right music = getMusic state name
-    liftIO $ saveMusic music fileName -- TODO: maybe some kind of exception if file name is weird
+    liftIO $ saveMusic music fileName -- FIXME: TASK 4
     return ()
 
 modify :: MyParser ()
@@ -181,7 +210,6 @@ insert name = do
     modifyState $ updateTrack name newTrack
     return ()
 
--- TODO: check it works on all indexes: first, last, middle, sequence
 delete :: String -> MyParser ()
 delete name = do
     string "delete"
@@ -210,17 +238,16 @@ replace name = do
 index :: MyParser Int
 index = int
 
--- TODO: make sure it parses it right
--- TODO: should check that the idexes are positive
+-- FIXME: TASK 5
 indexes :: MyParser (Int, Maybe Int)
-indexes = do
-    int <- int
-    return (int, Nothing)
-    <|> do
+indexes = try (do
     left <- int
     char '-'
     right <- int
-    return (left, Just right)
+    return (left, Just right))
+    <|> try (do
+    int <- int
+    return (int, Nothing))
 
 -- only for Music values
 parallelize :: String -> MyParser ()

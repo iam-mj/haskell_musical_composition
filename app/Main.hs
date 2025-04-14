@@ -1,11 +1,38 @@
 module Main where
 
-import Music.Data 
+import Music.Data
 import Music.Utils
 import MIDI.Performance
+import Input.Parser (mainParser)
+import Input.State
+
+import Text.Parsec hiding (parse)
+import System.IO
+
+-- TODO: add tab and spaces before definition constructors
+-- TODO: add error to error messages
+-- TODO: show tracks and music prettier
+-- TODO: give some feedback after parsing instructions
+-- TODO: repLine functionality
+
 
 main :: IO ()
-main = return ()
+main = parse "" emptyState
+
+parse :: String -> ParsingState -> IO ()
+parse buffer state = do
+    putStr "musically> "
+    hFlush stdout
+    line   <- getLine
+    if line /= "" then do
+        let newBuffer = buffer ++ line ++ "\n"
+        parse newBuffer state
+    else do
+        result <- runParserT mainParser state "<stdin>" buffer
+        case result of
+            Left err       -> print err >> parse "" state
+            Right newState -> parse "" newState
+
 
 -- test values
 myGroup = single $ note A 0.5
@@ -28,7 +55,6 @@ p2 = perform m2
 
 -- let's try composing Merry-Go-Round of Life
 -- TODO: they're supposed to be en, but would sound kinda bad :)
--- TODO: bad that you always have to know how many semitones up you want to go?
 q1 = repeatT 3 $ link [duo 3 (note B qn), duo 4 (noteInc C qn)]
 q2 = repeatT 3 $ link [duo 3 (note A qn), duo 3 (note B qn)]
 q3 = repeatT 3 $ link [duo 4 (note G qn), duo 3 (note A qn)]
