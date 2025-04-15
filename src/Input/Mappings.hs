@@ -11,7 +11,8 @@ errorMessages = map (\(key, val) -> (key, "Error: " ++ val)) [
     ("NotUniqueName", "There is already a value recorded with the given name. Please enter a unique name."),
     ("NoTrackNameFound", "No tracks found with the given name!"),
     ("NoMelodyNameFound", "No melodies found with the given name!"),
-    ("NoNameFound", "No structures found with the provided name")]
+    ("NoNameFound", "No structures found with the provided name"),
+    ("NegativeIndex", "The index must have a positive value")]
 
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("A", A), ("Ab", Af), ("A#", As),

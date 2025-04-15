@@ -14,14 +14,16 @@ data ParsingState = PState {
 } deriving Show
 
 -- errors
-uniqueNameErrKey = "NotUniqueName"     :: String
-noTracksErrKey   = "NoTrackNameFound"  :: String
-noMelodiesErrKey = "NoMelodyNameFound" :: String
-noNameErrKey     = "NoNameFound"       :: String
+uniqueNameErrKey  = "NotUniqueName"     :: String
+noTracksErrKey    = "NoTrackNameFound"  :: String
+noMelodiesErrKey  = "NoMelodyNameFound" :: String
+noNameErrKey      = "NoNameFound"       :: String
+negativeIdxErrKey = "NegativeIndex"     :: String
 
 emptyState :: ParsingState
 emptyState = PState [] []
 
+-- check that a track / music name is unique in the current state
 checkName :: String -> ParsingState -> Maybe String
 checkName name state = let inTracks   = lookup name $ tracks state
                            inMelodies = lookup name $ melodies state
@@ -31,6 +33,12 @@ checkName name state = let inTracks   = lookup name $ tracks state
                                             Nothing -> Nothing
                                             Just _  -> Just error
                                 Just _  -> Just error
+
+-- check that an index is positive
+checkIndex :: Int -> Maybe String
+checkIndex idx
+    | idx > 0  = Nothing
+    | otherwise = lookup negativeIdxErrKey errorMessages
 
 addTrack :: String -> Track -> ParsingState -> IO (Maybe ParsingState)
 addTrack name track state = 

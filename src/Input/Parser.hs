@@ -13,10 +13,10 @@ import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 
+-- TODO: TASK 1 - make sure the errors actually stop the execution (unique name)
 -- TODO: TASK 2 - repLine functionality
 -- TODO: TASK 3 - repLine parser okay?
 -- TODO: TASK 4 - exception if filename weird
--- TODO: TASK 5 - check that indexes are positive
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -33,7 +33,7 @@ musicParser = do
     track <- braces (eol >> musicDefinition)
     eol
     state    <- getState
-    newState <- liftIO $ addTrack name track state
+    newState <- liftIO $ addTrack name track state -- FIXME: TASK 1
     case newState of
         Nothing    -> putState state
         Just newSt -> putState newSt
@@ -157,7 +157,7 @@ context = do
     eol
     let Right track = getTrack state name
     let music = Music (interpret track) oct instrument
-    newState <- liftIO $ addMusic musicName music state
+    newState <- liftIO $ addMusic musicName music state -- FIXME: TASK 1
     case newState of
         Nothing    -> putState state
         Just newSt -> putState newSt
@@ -201,59 +201,80 @@ modifyOp :: String -> [MyParser ()]
 modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
 
 -- will insert at a certain group index
--- will have the show print the index of each group as well to make modifying easy
+-- TODO: will have the show print the index of each group as well to make modifying easy
 insert :: String -> MyParser ()
 insert name = do
     string "insert"
     spaces
-    idx <- index
-    spaces
-    insertName <- identifier
-    state      <- getState
-    let Right insert = getTrack state insertName
-        Right track  = getTrack state name
-        newTrack     = insertT track idx insert
-    modifyState $ updateTrack name newTrack
-    return ()
+    index <- index
+    case index of
+        Left err  -> liftIO $ putStrLn err >> return ()
+        Right idx -> do
+            spaces
+            insertName <- identifier
+            state      <- getState
+            let Right insert = getTrack state insertName
+                Right track  = getTrack state name
+                newTrack     = insertT track idx insert
+            modifyState $ updateTrack name newTrack
+            return ()
 
 delete :: String -> MyParser ()
 delete name = do
     string "delete"
     spaces
-    idxs  <- indexes 
-    state <- getState
-    let Right track = getTrack state name
-        newTrack    = deleteT track idxs
-    modifyState $ updateTrack name newTrack
-    return ()
+    indexes <- indexes 
+    case indexes of
+        Left err   -> liftIO $ putStrLn err >> return ()
+        Right idxs -> do
+            state <- getState
+            let Right track = getTrack state name
+                newTrack    = deleteT track idxs
+            modifyState $ updateTrack name newTrack
+            return ()
 
 replace :: String -> MyParser ()
 replace name = do
     string "replace"
     spaces
-    idxs <- indexes
-    spaces
-    replaceName <- identifier
-    state       <- getState
-    let Right track     = getTrack state name
-        Right replaceTr = getTrack state replaceName
-        newTrack        = replaceT track idxs replaceTr
-    modifyState $ updateTrack name newTrack 
-    return ()
+    indexes <- indexes
+    case indexes of
+        Left err   -> liftIO $ putStrLn err >> return ()
+        Right idxs -> do
+            spaces
+            replaceName <- identifier
+            state       <- getState
+            let Right track     = getTrack state name
+                Right replaceTr = getTrack state replaceName
+                newTrack        = replaceT track idxs replaceTr
+            modifyState $ updateTrack name newTrack 
+            return ()
 
-index :: MyParser Int
-index = int
+index :: MyParser (Either String Int)
+index = do
+    idx <- int
+    let err = checkIndex idx 
+    case err of
+        Nothing    -> return $ Right (idx - 1)
+        Just error -> return $ Left error
 
--- FIXME: TASK 5
-indexes :: MyParser (Int, Maybe Int)
+indexes :: MyParser (Either String (Int, Maybe Int))
 indexes = try (do
-    left <- int
-    char '-'
-    right <- int
-    return (left, Just right))
-    <|> try (do
-    int <- int
-    return (int, Nothing))
+    left <- index
+    case left of
+        Left err      -> return $ Left err
+        Right leftIdx -> do
+            char '-'
+            right <- index
+            case right of
+                Left err       -> return $ Left err
+                Right rightIdx -> return $ Right (leftIdx, Just rightIdx)
+    ) <|> try (do
+    idx <- index
+    case idx of
+        Left err    -> return $ Left err
+        Right index -> return $ Right (index, Nothing)
+    )
 
 -- only for Music values
 parallelize :: String -> MyParser ()
