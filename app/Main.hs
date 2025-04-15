@@ -13,8 +13,6 @@ import System.IO
 -- TODO: add error to error messages
 -- TODO: show tracks and music prettier
 -- TODO: give some feedback after parsing instructions
--- TODO: repLine functionality
-
 
 main :: IO ()
 main = parse "" emptyState

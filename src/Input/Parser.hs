@@ -13,7 +13,6 @@ import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 
--- TODO: TASK 1 - check music & tracks have unique names each time
 -- TODO: TASK 2 - repLine functionality
 -- TODO: TASK 3 - repLine parser okay?
 -- TODO: TASK 4 - exception if filename weird
@@ -29,11 +28,15 @@ musicParser :: MyParser ()
 musicParser = do
     string "music"
     spaces
-    name <- identifier -- FIXME: TASK 1
+    name <- identifier
     spaces
     track <- braces (eol >> musicDefinition)
     eol
-    modifyState $ addTrack name track
+    state    <- getState
+    newState <- liftIO $ addTrack name track state
+    case newState of
+        Nothing    -> putState state
+        Just newSt -> putState newSt
     return ()
 
 musicDefinition :: MyParser Track
@@ -145,7 +148,7 @@ context = do
     spaces
     name      <- identifier
     spaces
-    musicName <- identifier -- FIXME: TASK 1
+    musicName <- identifier
     state     <- getState
     spaces
     oct <- int
@@ -154,7 +157,10 @@ context = do
     eol
     let Right track = getTrack state name
     let music = Music (interpret track) oct instrument
-    modifyState $ addMusic musicName music
+    newState <- liftIO $ addMusic musicName music state
+    case newState of
+        Nothing    -> putState state
+        Just newSt -> putState newSt
     return ()
 
 play :: MyParser ()
@@ -292,3 +298,9 @@ trans name = do
             Left track  -> modifyState $ updateTrack name track
             Right music -> modifyState $ updateMusic name music 
     return ()
+
+-- parse a string from an assciation list and return it's associated value
+mapString :: [(String, a)] -> MyParser a
+mapString list = do
+    key <- choice (map ((try . string) . fst) list)
+    return $ fromJust $ lookup key list

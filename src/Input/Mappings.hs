@@ -4,13 +4,14 @@ import Music.Data
 import Text.Parsec.String
 import Text.Parsec
 import Data.Maybe
-import Input.State
 
--- parse a string from an assciation list and return it's associated value
-mapString :: [(String, a)] -> MyParser a
-mapString list = do
-    key <- choice (map ((try . string) . fst) list)
-    return $ fromJust $ lookup key list
+-- TODO: ok to put this here, or should make a different file?
+errorMessages :: [(String, String)]
+errorMessages = map (\(key, val) -> (key, "Error: " ++ val)) [
+    ("NotUniqueName", "There is already a value recorded with the given name. Please enter a unique name."),
+    ("NoTrackNameFound", "No tracks found with the given name!"),
+    ("NoMelodyNameFound", "No melodies found with the given name!"),
+    ("NoNameFound", "No structures found with the provided name")]
 
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("A", A), ("Ab", Af), ("A#", As),
