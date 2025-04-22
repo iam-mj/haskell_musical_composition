@@ -2,6 +2,7 @@ module Input.State where
 
 import Music.Data
 import Music.Utils
+import Music.Show
 import Input.Mappings
 import Text.Parsec
 import System.FilePath

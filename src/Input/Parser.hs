@@ -16,7 +16,7 @@ import Prelude hiding (show)
 -- TODO: TASK 1 - feedback after instruction completion
 -- TODO: TASK 2 - repLine functionality
 -- TODO: TASK 3 - repLine parser okay?
--- TODO: TASK 4 - show methods for tracks and music - with group indexes !!
+-- TODO: TASK 4 - make sure indexes are shown and can be manipulated as expected (from 0 / 1 stuff)
 -- TODO: TASK 5 - separate functionality from parser as much as possible
 -- TODO: TASK 6 - add a "print state"
 -- TODO: TASK 7 - aliases for weird types

@@ -34,15 +34,12 @@ data Group = Single Primitive
 data Track = EmptyT
             | Prim Group
             | Track :+: Track
-            deriving Show
-            -- TODO: maybe constumize the show method? get rid of all the ()?
 
 -- user specific data structures get interpreted into more specific data types - we call these "extended"
 data TrackE = EmptyET            -- nothing 
             | PrimET Primitive   -- note / rest
             | TrackE :++: TrackE -- sequence operator
             | TrackE :::: TrackE -- parallel operator
-            deriving Show
 
 type Octave = Int -- < 12
 
@@ -50,7 +47,6 @@ type Octave = Int -- < 12
 -- as well as a instrument
 data Music = Music TrackE Octave Instrument
             | Music ::: Music
-            deriving Show
 
 
 -- constructor functions

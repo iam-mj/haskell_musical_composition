@@ -55,6 +55,19 @@ unlink (Prim duo@(Duo _ _))     = [duo]
 unlink (Prim chord@(Chord _ _)) = [chord]
 unlink (track1 :+: track2)      = unlink track1 ++ unlink track2
 
+lengthT :: Track -> Int
+lengthT = length . unlink 
+
+lengthET :: TrackE -> Int
+lengthET EmptyET    = 0
+lengthET (PrimET _) = 1
+lengthET (track1 :++: track2) = lengthET track1 + lengthET track2
+lengthET (track1 :::: track2) = lengthET track1 + lengthET track2
+
+lengthM :: Music -> Int
+lengthM (Music trackE _ _)  = lengthET trackE
+lengthM (music1 ::: music2) = lengthM music1 + lengthM music2
+
 -- insert a track inside another track at a certain position
 insertT :: Track -> Int -> Track -> Track
 insertT track idx insertTr =
