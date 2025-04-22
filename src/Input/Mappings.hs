@@ -12,7 +12,8 @@ errorMessages = map (\(key, val) -> (key, "Error: " ++ val)) [
     ("NoTrackNameFound", "No tracks found with the given name!"),
     ("NoMelodyNameFound", "No melodies found with the given name!"),
     ("NoNameFound", "No structures found with the provided name"),
-    ("NegativeIndex", "The index must have a positive value")]
+    ("NegativeIndex", "The index must have a positive value"),
+    ("NotAMidiFile", "Please provide a file path to a MIDI file - it should have a '.mid' extension")]
 
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("A", A), ("Ab", Af), ("A#", As),

@@ -13,12 +13,13 @@ import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 
--- TODO: TASK 1 - make sure the errors actually stop the execution (unique name)
+-- TODO: TASK 1 - feedback after instruction completion
 -- TODO: TASK 2 - repLine functionality
 -- TODO: TASK 3 - repLine parser okay?
--- TODO: TASK 4 - exception if filename weird
--- TODO: TASK 5 - show methods for tracks and music - with group indexes !!
--- TODO: TASK 6 - separate functionality from parser as much as possible
+-- TODO: TASK 4 - show methods for tracks and music - with group indexes !!
+-- TODO: TASK 5 - separate functionality from parser as much as possible
+-- TODO: TASK 6 - add a "print state"
+-- TODO: TASK 7 - aliases for weird types
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -35,7 +36,7 @@ musicParser = do
     track <- braces (eol >> musicDefinition)
     eol
     state    <- getState
-    newState <- liftIO $ addTrack name track state -- FIXME: TASK 1
+    newState <- liftIO $ addTrack name track state
     case newState of
         Nothing    -> putState state
         Just newSt -> putState newSt
@@ -159,7 +160,7 @@ context = do
     eol
     let Right track = getTrack state name
     let music = Music (interpret track) oct instrument
-    newState <- liftIO $ addMusic musicName music state -- FIXME: TASK 1
+    newState <- liftIO $ addMusic musicName music state
     case newState of
         Nothing    -> putState state
         Just newSt -> putState newSt
@@ -182,12 +183,15 @@ save = do
     spaces
     name <- identifier
     spaces
-    fileName <- many $ noneOf "\n "
+    fileName <- quotes $ many $ noneOf "\n \""
     eol
-    state <- getState
-    let Right music = getMusic state name
-    liftIO $ saveMusic music fileName -- FIXME: TASK 4
-    return ()
+    let validationErr = validatePath fileName
+    case validationErr of
+        Nothing -> do
+            state <- getState
+            let Right music = getMusic state name
+            liftIO $ saveMusic music fileName
+        Just err -> liftIO $ print err
 
 modify :: MyParser ()
 modify = do
@@ -260,7 +264,6 @@ index = do
         Nothing    -> return $ Right (idx - 1)
         Just error -> return $ Left error
 
--- TODO: alias uri pt tipuri ciudate
 indexes :: MyParser (Either String (Int, Maybe Int))
 indexes = try (do
     left <- index

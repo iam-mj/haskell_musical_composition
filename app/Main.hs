@@ -9,9 +9,6 @@ import Input.State
 import Text.Parsec hiding (parse)
 import System.IO
 
--- TODO: show tracks and music prettier
--- TODO: give some feedback after parsing instructions
-
 main :: IO ()
 main = parse "" emptyState
 

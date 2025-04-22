@@ -36,6 +36,13 @@ parens parser = do
     char ')'
     return content
 
+quotes :: MyParser a -> MyParser a
+quotes parser = do
+    char '\"'
+    content <- parser
+    char '\"'
+    return content
+
 int :: MyParser Int
 int = do
     minus <- optionMaybe $ char '-'

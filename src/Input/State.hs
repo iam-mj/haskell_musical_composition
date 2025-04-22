@@ -4,6 +4,7 @@ import Music.Data
 import Music.Utils
 import Input.Mappings
 import Text.Parsec
+import System.FilePath
 
 -- new parser with the custom state
 type MyParser = ParsecT String ParsingState IO
@@ -19,6 +20,7 @@ noTracksErrKey    = "NoTrackNameFound"  :: String
 noMelodiesErrKey  = "NoMelodyNameFound" :: String
 noNameErrKey      = "NoNameFound"       :: String
 negativeIdxErrKey = "NegativeIndex"     :: String
+notMidiFileErrKey = "NotAMidiFile"      :: String
 
 emptyState :: ParsingState
 emptyState = PState [] []
@@ -107,3 +109,8 @@ transposeValue value num =
         Just structure -> case structure of
                             Left track  -> Right $ Left $ transposeT track num
                             Right music -> Right $ Right $ transposeM music num 
+
+validatePath :: FilePath -> Maybe String
+validatePath file
+    | takeExtension file == ".mid" = Nothing
+    | otherwise                    = lookup notMidiFileErrKey errorMessages
