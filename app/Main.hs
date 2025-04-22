@@ -9,8 +9,6 @@ import Input.State
 import Text.Parsec hiding (parse)
 import System.IO
 
--- TODO: add tab and spaces before definition constructors
--- TODO: add error to error messages
 -- TODO: show tracks and music prettier
 -- TODO: give some feedback after parsing instructions
 

@@ -12,6 +12,9 @@ eol = char '\n'
 identifier :: MyParser String
 identifier = many alphaNum
 
+identation :: MyParser String
+identation = many (tab <|> space)
+
 content :: MyParser Char
 content = alphaNum <|> char '/' <|> char '(' <|> char ')' <|> space <|> char ',' <|> eol
 

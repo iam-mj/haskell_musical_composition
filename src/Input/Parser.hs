@@ -17,6 +17,8 @@ import Prelude hiding (show)
 -- TODO: TASK 2 - repLine functionality
 -- TODO: TASK 3 - repLine parser okay?
 -- TODO: TASK 4 - exception if filename weird
+-- TODO: TASK 5 - show methods for tracks and music - with group indexes !!
+-- TODO: TASK 6 - separate functionality from parser as much as possible
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -41,7 +43,7 @@ musicParser = do
 
 musicDefinition :: MyParser Track
 musicDefinition = do
-    groups <- many groups
+    groups <- many (identation >> groups)
     return $ link $ concat groups
 
 groups :: MyParser [Group]
@@ -201,7 +203,7 @@ modifyOp :: String -> [MyParser ()]
 modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
 
 -- will insert at a certain group index
--- TODO: will have the show print the index of each group as well to make modifying easy
+-- will print the index of each group at the show command as well to make modifying easy
 insert :: String -> MyParser ()
 insert name = do
     string "insert"
@@ -258,6 +260,7 @@ index = do
         Nothing    -> return $ Right (idx - 1)
         Just error -> return $ Left error
 
+-- TODO: alias uri pt tipuri ciudate
 indexes :: MyParser (Either String (Int, Maybe Int))
 indexes = try (do
     left <- index
