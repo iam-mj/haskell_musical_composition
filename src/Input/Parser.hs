@@ -12,11 +12,11 @@ import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
+import MIDI.Synthesizer (playMidiFile)
 
 -- TODO: TASK 2  - repLine functionality
 -- TODO: TASK 3  - repLine parser okay?
 -- TODO: TASK 5  - separate functionality from parser as much as possible
--- TODO: TASK 8  - play file
 -- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 -- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
 
@@ -166,6 +166,7 @@ context = do
     musicName <- identifier
     state     <- getState
     spaces
+    string "oct"
     oct <- int
     spaces
     instrument <- mapString stringToInstrument
@@ -185,6 +186,19 @@ play :: MyParser ()
 play = do
     string "play"
     spaces
+    playFile <|> playValue
+
+playFile :: MyParser ()
+playFile = do
+    fileName <- quotes $ many $ noneOf "\n \""
+    eol
+    let validationErr = validatePath fileName
+    case validationErr of
+        Nothing  -> liftIO $ playMidiFile fileName
+        Just err -> liftIO $ print err
+    
+playValue :: MyParser ()
+playValue = do
     name  <- identifier
     state <- getState
     eol
