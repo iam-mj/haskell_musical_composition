@@ -3,7 +3,7 @@ import Music.Data
 import Music.Utils
 
 instance Show Track where
-    show track = showIndex track 0
+    show track = showIndex track 1
         where
             showIndex EmptyT n = "[" ++ show n ++ "]"
             showIndex (Prim (Single (Rest dur))) n = "rest: " ++ show dur ++ showInd n

@@ -101,6 +101,26 @@ printValue state name =
                             Left track  -> print track
                             Right music -> print music
 
+printState :: ParsingState -> IO ()
+printState state = do
+    printTracks   $ tracks state
+    putStrLn "-----------------\n"
+    printMelodies $ melodies state
+
+printTracks :: [(String, Track)] -> IO ()
+printTracks tracks = putStrLn "Tracks\n" >> foldl (\instr track -> instr >> printTrack track) (return ()) tracks
+    where printTrack (name, track) = do
+            putStrLn $ "Track " ++ name ++ ":" 
+            print track
+            putStrLn ""
+
+printMelodies :: [(String, Music)] -> IO ()
+printMelodies melodies = putStrLn "Melodies\n" >> foldl (\instr melody -> instr >> printMusic melody) (return ()) melodies
+    where printMusic (name, music) = do
+            putStrLn $ "Melody " ++ name ++ ":" 
+            print music
+            putStrLn ""
+
 -- transpose either a track or a music with a number of semitones
 transposeValue :: Maybe (Either Track Music) -> Int -> Either (IO ()) (Either Track Music)
 transposeValue value num = 

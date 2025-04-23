@@ -13,13 +13,14 @@ import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 
--- TODO: TASK 1 - feedback after instruction completion
--- TODO: TASK 2 - repLine functionality
--- TODO: TASK 3 - repLine parser okay?
--- TODO: TASK 4 - make sure indexes are shown and can be manipulated as expected (from 0 / 1 stuff)
--- TODO: TASK 5 - separate functionality from parser as much as possible
--- TODO: TASK 6 - add a "print state"
--- TODO: TASK 7 - aliases for weird types
+-- TODO: TASK 1  - feedback after instruction completion
+-- TODO: TASK 2  - repLine functionality
+-- TODO: TASK 3  - repLine parser okay?
+-- TODO: TASK 5  - separate functionality from parser as much as possible
+-- TODO: TASK 7  - aliases for weird types
+-- TODO: TASK 8  - play file
+-- TODO: TASK 9  - are all the "return ()" necessary?
+-- TODO: TASK 10 - might have to rename the "music" command as "track" 
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -139,6 +140,18 @@ show :: MyParser ()
 show = do
     string "show"
     spaces
+    showAll <|> showOne
+
+showAll :: MyParser ()
+showAll = do
+    string "-all"
+    eol
+    state <- getState
+    liftIO $ printState state
+    return ()
+
+showOne :: MyParser ()
+showOne = do
     name  <- identifier
     state <- getState
     eol
