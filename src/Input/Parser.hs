@@ -18,7 +18,6 @@ import Prelude hiding (show)
 -- TODO: TASK 5  - separate functionality from parser as much as possible
 -- TODO: TASK 7  - aliases for weird types
 -- TODO: TASK 8  - play file
--- TODO: TASK 9  - are all the "return ()" necessary?
 -- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 
 mainParser :: MyParser ParsingState
@@ -44,7 +43,6 @@ musicParser = do
         Just newSt -> do
             putState newSt
             liftIO $ putStrLn $ "Track " ++ name ++ " added succesfully"
-    return ()
 
 musicDefinition :: MyParser Track
 musicDefinition = do
@@ -151,7 +149,6 @@ showAll = do
     eol
     state <- getState
     liftIO $ printState state
-    return ()
 
 showOne :: MyParser ()
 showOne = do
@@ -159,7 +156,6 @@ showOne = do
     state <- getState
     eol
     liftIO $ printValue state name
-    return ()
 
 context :: MyParser ()
 context = do
@@ -184,7 +180,6 @@ context = do
         Just newSt -> do
             putState newSt
             liftIO $ putStrLn $ "Melody " ++ musicName ++ " added succesfully"
-    return ()
 
 play :: MyParser ()
 play = do
@@ -195,7 +190,6 @@ play = do
     eol
     let Right music = getMusic state name
     liftIO $ playMusic music
-    return ()
 
 save :: MyParser ()
 save = do
@@ -235,7 +229,7 @@ insert name = do
     spaces
     index <- index
     case index of
-        Left err  -> liftIO $ putStrLn err >> return ()
+        Left err  -> liftIO $ putStrLn err
         Right idx -> do
             spaces
             insertName <- identifier
@@ -246,7 +240,6 @@ insert name = do
             modifyState $ updateTrack name newTrack
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
-            return ()
 
 delete :: String -> MyParser ()
 delete name = do
@@ -254,7 +247,7 @@ delete name = do
     spaces
     indexes <- indexes 
     case indexes of
-        Left err   -> liftIO $ putStrLn err >> return ()
+        Left err   -> liftIO $ putStrLn err
         Right idxs -> do
             state <- getState
             let Right track = getTrack state name
@@ -262,7 +255,6 @@ delete name = do
             modifyState $ updateTrack name newTrack
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
-            return ()
 
 replace :: String -> MyParser ()
 replace name = do
@@ -270,7 +262,7 @@ replace name = do
     spaces
     indexes <- indexes
     case indexes of
-        Left err   -> liftIO $ putStrLn err >> return ()
+        Left err   -> liftIO $ putStrLn err
         Right idxs -> do
             spaces
             replaceName <- identifier
@@ -281,7 +273,6 @@ replace name = do
             modifyState $ updateTrack name newTrack
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
-            return ()
 
 index :: MyParser (Either String Int)
 index = do
@@ -322,7 +313,6 @@ parallelize name = do
     modifyState $ updateMusic name newMusic
     liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
     liftIO $ print newMusic
-    return ()
 
 -- very awkward name but others clashed with Prelude functions
 -- only for tracks
@@ -339,7 +329,6 @@ seque name = do
     modifyState $ updateTrack name newTrack
     liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
     liftIO $ print newTrack
-    return ()
 
 -- for both tracks and music
 trans :: String -> MyParser ()
@@ -361,7 +350,6 @@ trans name = do
                 modifyState $ updateMusic name music 
                 liftIO $ putStrLn $ "Melody " ++ name ++ " was transposed succesfully"
                 liftIO $ print music
-    return ()
 
 -- parse a string from an assciation list and return it's associated value
 mapString :: [(String, a)] -> MyParser a
