@@ -13,14 +13,13 @@ import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 
--- TODO: TASK 1  - feedback after instruction completion
 -- TODO: TASK 2  - repLine functionality
 -- TODO: TASK 3  - repLine parser okay?
 -- TODO: TASK 5  - separate functionality from parser as much as possible
 -- TODO: TASK 7  - aliases for weird types
 -- TODO: TASK 8  - play file
 -- TODO: TASK 9  - are all the "return ()" necessary?
--- TODO: TASK 10 - might have to rename the "music" command as "track" 
+-- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -39,8 +38,12 @@ musicParser = do
     state    <- getState
     newState <- liftIO $ addTrack name track state
     case newState of
-        Nothing    -> putState state
-        Just newSt -> putState newSt
+        Nothing    -> do
+            putState state
+            liftIO $ putStrLn $ "Failed to add track " ++ name
+        Just newSt -> do
+            putState newSt
+            liftIO $ putStrLn $ "Track " ++ name ++ " added succesfully"
     return ()
 
 musicDefinition :: MyParser Track
@@ -175,8 +178,12 @@ context = do
     let music = Music (interpret track) oct instrument
     newState <- liftIO $ addMusic musicName music state
     case newState of
-        Nothing    -> putState state
-        Just newSt -> putState newSt
+        Nothing    -> do
+            putState state
+            liftIO $ putStrLn $ "Failed to add melody " ++ musicName
+        Just newSt -> do
+            putState newSt
+            liftIO $ putStrLn $ "Melody " ++ musicName ++ " added succesfully"
     return ()
 
 play :: MyParser ()
@@ -204,6 +211,7 @@ save = do
             state <- getState
             let Right music = getMusic state name
             liftIO $ saveMusic music fileName
+            liftIO $ putStrLn $ "File " ++ fileName ++ " saved succesfully"
         Just err -> liftIO $ print err
 
 modify :: MyParser ()
@@ -236,6 +244,8 @@ insert name = do
                 Right track  = getTrack state name
                 newTrack     = insertT track idx insert
             modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
             return ()
 
 delete :: String -> MyParser ()
@@ -250,6 +260,8 @@ delete name = do
             let Right track = getTrack state name
                 newTrack    = deleteT track idxs
             modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
             return ()
 
 replace :: String -> MyParser ()
@@ -266,7 +278,9 @@ replace name = do
             let Right track     = getTrack state name
                 Right replaceTr = getTrack state replaceName
                 newTrack        = replaceT track idxs replaceTr
-            modifyState $ updateTrack name newTrack 
+            modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
             return ()
 
 index :: MyParser (Either String Int)
@@ -306,6 +320,8 @@ parallelize name = do
         Right paraMusic = getMusic state paraName
         newMusic        = music ::: paraMusic
     modifyState $ updateMusic name newMusic
+    liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
+    liftIO $ print newMusic
     return ()
 
 -- very awkward name but others clashed with Prelude functions
@@ -321,6 +337,8 @@ seque name = do
         Right seqTr = getTrack state seqName
         newTrack    = addRepeatT track seqTr num
     modifyState $ updateTrack name newTrack
+    liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
+    liftIO $ print newTrack
     return ()
 
 -- for both tracks and music
@@ -335,8 +353,14 @@ trans name = do
     case newValue of
         Left _          -> return ()
         Right structure -> case structure of
-            Left track  -> modifyState $ updateTrack name track
-            Right music -> modifyState $ updateMusic name music 
+            Left track  -> do
+                modifyState $ updateTrack name track
+                liftIO $ putStrLn $ "Track " ++ name ++ " was transposed succesfully"
+                liftIO $ print track
+            Right music -> do
+                modifyState $ updateMusic name music 
+                liftIO $ putStrLn $ "Melody " ++ name ++ " was transposed succesfully"
+                liftIO $ print music
     return ()
 
 -- parse a string from an assciation list and return it's associated value
