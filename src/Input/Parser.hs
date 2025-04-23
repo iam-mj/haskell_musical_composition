@@ -16,9 +16,9 @@ import Prelude hiding (show)
 -- TODO: TASK 2  - repLine functionality
 -- TODO: TASK 3  - repLine parser okay?
 -- TODO: TASK 5  - separate functionality from parser as much as possible
--- TODO: TASK 7  - aliases for weird types
 -- TODO: TASK 8  - play file
 -- TODO: TASK 10 - might have to rename the "music" command as "track" + context
+-- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -218,12 +218,12 @@ modify = do
     eol
     return ()
 
-modifyOp :: String -> [MyParser ()]
+modifyOp :: Name -> [MyParser ()]
 modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
 
 -- will insert at a certain group index
 -- will print the index of each group at the show command as well to make modifying easy
-insert :: String -> MyParser ()
+insert :: Name -> MyParser ()
 insert name = do
     string "insert"
     spaces
@@ -241,7 +241,7 @@ insert name = do
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
 
-delete :: String -> MyParser ()
+delete :: Name -> MyParser ()
 delete name = do
     string "delete"
     spaces
@@ -256,7 +256,7 @@ delete name = do
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
 
-replace :: String -> MyParser ()
+replace :: Name -> MyParser ()
 replace name = do
     string "replace"
     spaces
@@ -274,7 +274,10 @@ replace name = do
             liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
             liftIO $ print newTrack
 
-index :: MyParser (Either String Int)
+type Index   = Int
+type Indexes = (Index, Maybe Index) -- one index (e.g. 1) or the limits of an interval of indexes (e.g. 2-4) 
+
+index :: MyParser (Either Error Index)
 index = do
     idx <- int
     let err = checkIndex idx 
@@ -282,7 +285,7 @@ index = do
         Nothing    -> return $ Right (idx - 1)
         Just error -> return $ Left error
 
-indexes :: MyParser (Either String (Int, Maybe Int))
+indexes :: MyParser (Either Error Indexes)
 indexes = try (do
     left <- index
     case left of
@@ -301,7 +304,7 @@ indexes = try (do
     )
 
 -- only for Music values
-parallelize :: String -> MyParser ()
+parallelize :: Name -> MyParser ()
 parallelize name = do
     string "||"
     spaces
@@ -316,7 +319,7 @@ parallelize name = do
 
 -- very awkward name but others clashed with Prelude functions
 -- only for tracks
-seque :: String -> MyParser ()
+seque :: Name -> MyParser ()
 seque name = do
     string "++"
     num <- optionMaybe int
@@ -331,7 +334,7 @@ seque name = do
     liftIO $ print newTrack
 
 -- for both tracks and music
-trans :: String -> MyParser ()
+trans :: Name -> MyParser ()
 trans name = do
     string "transpose"
     spaces
