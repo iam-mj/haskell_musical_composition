@@ -34,6 +34,7 @@ library
         Input.Fundamental
         Input.Mappings
         Input.State
+        Input.Helpers
 
     -- Modules included in this library but not exported.
     -- other-modules:

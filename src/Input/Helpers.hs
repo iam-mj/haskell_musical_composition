@@ -1,0 +1,269 @@
+module Input.Helpers where
+
+import Input.State
+import Music.Data
+import Text.Parsec
+import Control.Monad.IO.Class (liftIO)
+import Music.Utils
+import MIDI.Synthesizer (playMidiFile)
+import MIDI.ToMIDI (playMusic, saveMusic)
+import Data.Maybe (fromJust)
+
+-- TODO: no magic strings
+
+------------------------------------------------
+--                  TYPES                     --
+------------------------------------------------
+
+type Index   = Int
+type Indexes = (Index, Maybe Index) -- one index (e.g. 1) or the limits of an interval of indexes (e.g. 2-4) 
+
+type IndexOrError   = Either Error Index
+type IndexesOrError = Either Error Indexes
+
+type Repeat          = Int
+type RepeatNote      = (Primitive, Repeat)
+type RepeatDuo       = (Int, Primitive, Repeat)
+type RepeatChord     = (Chord, Primitive, Repeat)
+type PitchWithChange = (Pitch, OctaveChange)
+
+
+------------------------------------------------
+--               FUNCTIONAL                   --
+------------------------------------------------
+
+
+-- parse a string from an assciation list and return it's associated value
+mapString :: [(String, a)] -> MyParser a
+mapString list = do
+    key <- choice (map ((try . string) . fst) list)
+    return $ fromJust $ lookup key list
+
+tryAddTrack :: Name -> Track -> MyParser ()
+tryAddTrack name track = do
+    state    <- getState
+    newState <- liftIO $ addTrack name track state
+    case newState of
+        Nothing    -> liftIO $ putStrLn $ "Failed to add track " ++ name
+        Just newSt -> do
+            putState newSt
+            liftIO $ putStrLn $ "Track " ++ name ++ " added succesfully"
+
+tryAddMusic :: Name -> Name -> Int -> Instrument -> MyParser ()
+tryAddMusic name musicName oct instrument = do
+    -- get the track from the current state and create the music with the given context
+    state <- getState
+    let Right track = getTrack state name
+        music       = Music (interpret track) oct instrument
+    -- try to add the new melody to the state
+    newState <- liftIO $ addMusic musicName music state
+    case newState of
+        Nothing    -> liftIO $ putStrLn $ "Failed to add melody " ++ musicName
+        Just newSt -> do
+            putState newSt
+            liftIO $ putStrLn $ "Melody " ++ musicName ++ " added succesfully"
+
+showAllHelper :: MyParser ()
+showAllHelper = do
+    state <- getState
+    liftIO $ printState state
+
+showOneHelper :: Name -> MyParser ()
+showOneHelper name = do
+    state <- getState
+    liftIO $ printValue state name
+
+tryPlayFile :: String -> MyParser ()
+tryPlayFile fileName = do
+    let validationErr = validatePath fileName
+    case validationErr of
+        Nothing  -> liftIO $ playMidiFile fileName
+        Just err -> liftIO $ print err
+
+tryPlayValue :: Name -> MyParser ()
+tryPlayValue name = do
+    state <- getState
+    let Right music = getMusic state name
+    liftIO $ playMusic music
+
+saveToFile :: Name -> String -> MyParser ()
+saveToFile name fileName = do
+    let validationErr = validatePath fileName
+    case validationErr of
+        Nothing -> do
+            state <- getState
+            let Right music = getMusic state name
+            liftIO $ saveMusic music fileName
+            liftIO $ putStrLn $ "File " ++ fileName ++ " saved succesfully"
+        Just err -> liftIO $ print err
+
+callInsert :: Name -> IndexOrError -> Name -> MyParser ()
+callInsert name idx insertName = do
+    case idx of
+        Left err  -> liftIO $ putStrLn err
+        Right idx -> do
+            state <- getState
+            let Right insert = getTrack state insertName
+                Right track  = getTrack state name
+                newTrack     = insertT track idx insert
+            modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
+
+callDelete :: Name -> IndexesOrError -> MyParser ()
+callDelete name indexes = do
+    case indexes of
+        Left err   -> liftIO $ putStrLn err
+        Right idxs -> do
+            state <- getState
+            let Right track = getTrack state name
+                newTrack    = deleteT track idxs
+            modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
+
+callReplace :: Name -> IndexesOrError -> String -> MyParser ()
+callReplace name indexes replaceName = do
+    case indexes of
+        Left err   -> liftIO $ putStrLn err
+        Right idxs -> do
+            state <- getState
+            let Right track     = getTrack state name
+                Right replaceTr = getTrack state replaceName
+                newTrack        = replaceT track idxs replaceTr
+            modifyState $ updateTrack name newTrack
+            liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+            liftIO $ print newTrack
+
+callParallelize :: Name -> Name -> MyParser ()
+callParallelize name paraName = do
+    state <- getState
+    let Right music     = getMusic state name
+        Right paraMusic = getMusic state paraName
+        newMusic        = music ::: paraMusic
+    modifyState $ updateMusic name newMusic
+    liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
+    liftIO $ print newMusic
+
+callSequence :: Name -> Maybe Int -> Name -> MyParser ()
+callSequence name num seqName = do
+    state <- getState
+    let Right track = getTrack state name
+        Right seqTr = getTrack state seqName
+        newTrack    = addRepeatT track seqTr num
+    modifyState $ updateTrack name newTrack
+    liftIO $ putStrLn $ "Melody " ++ name ++ " modified succesfully"
+    liftIO $ print newTrack
+
+callTranspose :: Name -> Int -> MyParser ()
+callTranspose name num = do
+    state <- getState
+    let value    = getValue state name
+        newValue = transposeValue value num
+    case newValue of
+        Left _          -> return ()
+        Right structure -> case structure of
+            Left track  -> do
+                modifyState $ updateTrack name track
+                liftIO $ putStrLn $ "Track " ++ name ++ " was transposed succesfully"
+                liftIO $ print track
+            Right music -> do
+                modifyState $ updateMusic name music 
+                liftIO $ putStrLn $ "Melody " ++ name ++ " was transposed succesfully"
+                liftIO $ print music
+
+
+------------------------------------------------
+--             TRANSFORMATIONS                --
+------------------------------------------------
+
+
+groupsToTrack :: [[Group]] -> MyParser Track
+groupsToTrack = return . link . concat
+
+repeatList :: Int -> [a] -> [a]
+repeatList n = concat . replicate n
+
+notesToGroups :: [RepeatNote] -> Maybe Repeat -> MyParser [Group]
+notesToGroups repeatNotes repLine = do
+    -- transform the (note, int) tuples into groups
+    let repeatNote (note, n) = replicate n note
+        notes                = concatMap repeatNote repeatNotes
+        groups               = map Single notes
+    -- repeat the line if necessary
+    case repLine of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
+
+restToGroups :: Duration -> Maybe Repeat -> MyParser [Group]
+restToGroups dur repLine = do
+    let groups = [(Single . Rest) dur]
+    case repLine of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
+
+duosToGroups :: [RepeatDuo] -> Maybe Repeat -> MyParser [Group]
+duosToGroups repeatDuos repLine = do
+    -- transform (int, note, rep) tuples into groups
+    let repeatDuo (int, note, rep) = replicate rep (int, note)
+        duos                       = concatMap repeatDuo repeatDuos
+        groups                     = map (uncurry Duo) duos
+    -- repeat the line of duos if necessary
+    case repLine of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
+
+chordsToGroups :: [RepeatChord] -> Maybe Repeat -> MyParser [Group]
+chordsToGroups repeatChords repLine = do
+    -- transform (chord, note, rep) tuples to groups 
+    let repeatChord (chd, note, rep) = replicate rep (chd, note)
+        chords                       = concatMap repeatChord repeatChords
+        groups                       = map (uncurry Chord) chords
+    -- repeat the line of chords if necessary
+    case repLine of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
+
+
+
+------------------------------------------------
+--                 MAKERS                     --
+------------------------------------------------
+
+noChange = 0 :: OctaveChange
+
+makePitchWithChange :: Pitch -> Maybe OctaveChange -> MyParser PitchWithChange
+makePitchWithChange pitch ch = do
+    case ch of
+        Nothing -> return (pitch, noChange)
+        Just ch -> return (pitch, fromIntegral ch)
+
+makeRepeatNote :: Pitch -> Duration -> OctaveChange -> Maybe Repeat -> MyParser RepeatNote
+makeRepeatNote pitch dur ch rep = do
+    case rep of
+        Nothing     -> return (Note pitch dur ch, 1)
+        Just repeat -> return (Note pitch dur ch, repeat)
+
+makeIndex :: Index -> MyParser IndexOrError
+makeIndex idx = do
+    let err = checkIndex idx 
+    case err of
+        Nothing    -> return $ Right (idx - 1)
+        Just error -> return $ Left error
+
+-- make indexes or error when 2 limits for an index interval should be provided
+makeIndexes2 :: IndexOrError -> IndexOrError -> MyParser IndexesOrError
+makeIndexes2 left right = do
+    case left of
+        Left err      -> return $ Left err
+        Right leftIdx -> do
+            case right of
+                Left err       -> return $ Left err
+                Right rightIdx -> return $ Right (leftIdx, Just rightIdx)
+
+-- make indexes or error when we only have one index and not an interval
+makeIndexes1 :: IndexOrError -> MyParser IndexesOrError
+makeIndexes1 idx = do
+    case idx of
+        Left err    -> return $ Left err
+        Right index -> return $ Right (index, Nothing)
