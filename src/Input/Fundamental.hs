@@ -1,6 +1,6 @@
 module Input.Fundamental where
 
-import Text.Parsec
+import Text.Parsec hiding (spaces)
 import Input.State (MyParser)
 
 -- tried using a lexer, but it doesn't agree with the IO monad
@@ -8,6 +8,9 @@ import Input.State (MyParser)
 -- end of line
 eol :: MyParser Char
 eol = char '\n'
+
+spaces :: MyParser String
+spaces = many $ char ' '
 
 identifier :: MyParser String
 identifier = many alphaNum
@@ -54,8 +57,10 @@ int = do
 commaSep :: MyParser a -> MyParser [a]
 commaSep parser = do
     first <- parser
-    rest <- many (do
+    rest  <- many (
+        do
         char ','
         spaces
-        parser)
+        parser
+        )
     return (first : rest)

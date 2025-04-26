@@ -68,6 +68,9 @@ lengthM :: Music -> Int
 lengthM (Music trackE _ _)  = lengthET trackE
 lengthM (music1 ::: music2) = lengthM music1 + lengthM music2
 
+repeatList :: Int -> [a] -> [a]
+repeatList n = concat . replicate n
+
 -- insert a track inside another track at a certain position
 insertT :: Track -> Int -> Track -> Track
 insertT track idx insertTr =

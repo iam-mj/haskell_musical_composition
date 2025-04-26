@@ -7,18 +7,17 @@ import MIDI.ToMIDI
 import Music.Data
 import Music.Utils
 
-import Text.Parsec
+import Text.Parsec hiding (spaces)
 import Data.Maybe
 import Control.Monad.IO.Class (liftIO)
 import Text.Parsec.Token (comma)
 import Prelude hiding (show)
 import MIDI.Synthesizer (playMidiFile)
 
--- TODO: TASK 2  - repLine functionality
--- TODO: TASK 3  - repLine parser okay?
 -- TODO: TASK 5  - separate functionality from parser as much as possible
 -- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 -- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
+-- TODO: TASK 12 - add a "clean track" of empty tracks
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -57,17 +56,24 @@ noteLine = do
     string "note:"
     spaces
     notes <- commaSep oneNote
-    rep   <- optionMaybe repLine -- FIXME: TASK 2
+    rep   <- optionMaybe repLine
     eol
     spaces
-    return $ map Single notes
+    let groups = map Single (concatMap (\(note, n) -> replicate n note) notes)
+    case rep of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
 
-oneNote :: MyParser Primitive
+oneNote :: MyParser (Primitive, Int)
 oneNote = do
     spaces
     (pitch, ch) <- pitchP
     dur         <- durP
-    return (Note pitch dur ch)
+    rep         <- optionMaybe rep
+    case rep of
+        Nothing     -> return (Note pitch dur ch, 1)
+        Just repeat -> return (Note pitch dur ch, repeat)
+    
 
 noChange = 0 :: OctaveChange
 
@@ -83,11 +89,7 @@ pitchP = do
           pitchClass = mapString stringToPitch
 
 durP :: MyParser Duration
-durP = do
-    spaces
-    dur <- mapString stringToDuration
-    rep <- optionMaybe rep -- FIXME: TASK 2
-    return dur
+durP = spaces >> mapString stringToDuration
 
 restLine :: MyParser [Group]
 restLine = do
@@ -96,7 +98,10 @@ restLine = do
     rest <- durP
     rep  <- optionMaybe repLine
     eol
-    return [(Single . Rest) rest]
+    let groups = [(Single . Rest) rest]
+    case rep of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
 
 duoLine :: MyParser [Group]
 duoLine = do
@@ -105,14 +110,17 @@ duoLine = do
     rep  <- optionMaybe repLine
     eol
     spaces
-    return $ map (uncurry Duo) duos
+    let groups = map (uncurry Duo) (concatMap (\(int, note, rep) -> replicate rep (int, note)) duos)
+    case rep of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
 
-oneDuo :: MyParser (Interval, Primitive)
+oneDuo :: MyParser (Interval, Primitive, Int)
 oneDuo = do
     spaces
-    int  <- int -- TODO: in my grammar example the interval was not an integer, make up your mind!
-    note <- oneNote
-    return (int, note)
+    int         <- int -- TODO: in my grammar example the interval was not an integer, make up your mind!
+    (note, rep) <- oneNote
+    return (int, note, rep)
 
 chordLine :: MyParser [Group]
 chordLine = do
@@ -121,21 +129,23 @@ chordLine = do
     rep    <- optionMaybe repLine
     eol
     spaces
-    return $ map (uncurry Chord) chords
+    let groups = map (uncurry Chord) (concatMap (\(chd, note, rep) -> replicate rep (chd, note)) chords)
+    case rep of
+        Nothing     -> return groups
+        Just repeat -> return $ repeatList repeat groups
 
-oneChord :: MyParser (Chord, Primitive)
+oneChord :: MyParser (Chord, Primitive, Int)
 oneChord = do
     spaces
-    chord <- mapString stringToChord
-    note  <- oneNote
-    return (chord, note)
+    chord       <- mapString stringToChord
+    (note, rep) <- oneNote
+    return (chord, note, rep)
 
--- FIXME: TASK 3
 repLine :: MyParser Int
-repLine = (char '/' >> return 0) <|> parens rep <|> (char '/' >> parens rep)
+repLine = spaces >> parens rep
 
 rep :: MyParser Int
-rep = char 'x' >> int
+rep = spaces >> char 'x' >> int
 
 show :: MyParser ()
 show = do
