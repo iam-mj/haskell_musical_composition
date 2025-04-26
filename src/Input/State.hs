@@ -3,15 +3,14 @@ module Input.State where
 import Music.Data
 import Music.Utils
 import Music.Show
-import Input.Mappings
+import Input.Messages
 import Text.Parsec
 import System.FilePath
 import Control.Monad.Cont (liftIO)
 
 -- types
 type Name    = String              -- identifiers for the structures in the parser state
-type Error   = String
-type PSValue = Either Track Music 
+type PSValue = Either Track Music  -- structure recorded in the parser's state: track / melody (music)
 
 data ParsingState = PState {
     tracks   :: [(Name, Track)], -- variables which were just defined
@@ -21,14 +20,6 @@ data ParsingState = PState {
 -- new parser with the custom state
 type MyParser = ParsecT String ParsingState IO
 
--- error keys
-uniqueNameErrKey  = "NotUniqueName"     :: String
-noTracksErrKey    = "NoTrackNameFound"  :: String
-noMelodiesErrKey  = "NoMelodyNameFound" :: String
-noNameErrKey      = "NoNameFound"       :: String
-negativeIdxErrKey = "NegativeIndex"     :: String
-notMidiFileErrKey = "NotAMidiFile"      :: String
-
 emptyState :: ParsingState
 emptyState = PState [] []
 
@@ -37,18 +28,19 @@ checkName :: Name -> ParsingState -> Maybe Error
 checkName name state = 
     let inTracks   = lookup name $ tracks state
         inMelodies = lookup name $ melodies state
-        Just error = lookup uniqueNameErrKey errorMessages
+        Just error = lookup NotUniqueName errorMessages
     in case inTracks of
             Nothing -> case inMelodies of
                         Nothing -> Nothing
-                        Just _  -> Just error
-            Just _  -> Just error
+                        Just _  -> Just $ error name
+            Just _  -> Just $ error name
 
 -- check that an index is positive
 checkIndex :: Int -> Maybe Error
 checkIndex idx
     | idx > 0   = Nothing
-    | otherwise = lookup negativeIdxErrKey errorMessages
+    | otherwise = let Just error = lookup NegativeIndex errorMessages
+                  in Just $ error $ show idx
 
 addTrack :: Name -> Track -> ParsingState -> Either Error ParsingState
 addTrack name track state = 
@@ -64,16 +56,16 @@ addMusic name music state =
 
 getTrack :: ParsingState -> Name -> Either Error Track
 getTrack state name = 
-    let Just error = lookup noTracksErrKey errorMessages
+    let Just error = lookup NoTrackName errorMessages
     in case lookup name (tracks state) of
-            Nothing    -> Left error
+            Nothing    -> Left $ error name
             Just track -> Right track
 
 getMusic :: ParsingState -> Name -> Either Error Music
 getMusic state name = 
-    let Just error = lookup noMelodiesErrKey errorMessages
+    let Just error = lookup NoMelodyName errorMessages
     in case lookup name (melodies state) of
-            Nothing    -> Left error
+            Nothing    -> Left $ error name
             Just music -> Right music
 
 -- find in the state the value of the identifier provided
@@ -102,9 +94,9 @@ updateMusic name music state = state {melodies = updateList name music (melodies
 printValue :: ParsingState -> Name -> IO ()
 printValue state name =
     let value      = getValue state name
-        Just error = lookup noNameErrKey errorMessages
+        Just error = lookup NoName errorMessages
     in case value of
-        Nothing        -> putStrLn error
+        Nothing        -> putStrLn $ error name
         Just structure -> case structure of
                             Left track  -> print track
                             Right music -> print music
@@ -134,9 +126,9 @@ printMelodies melodies = putStrLn "Melodies\n" >> foldl accPrint (return ()) mel
 -- transpose either a track or a music with a number of semitones
 transposeValue :: Maybe PSValue -> Int -> Either Error PSValue
 transposeValue value num = 
-    let Just error = lookup noNameErrKey errorMessages
+    let Just error = lookup NoName errorMessages
     in case value of 
-        Nothing        -> Left error
+        Nothing        -> Left $ error ""
         Just structure -> case structure of
                             Left track  -> Right $ Left $ transposeT track num
                             Right music -> Right $ Right $ transposeM music num 
@@ -144,4 +136,5 @@ transposeValue value num =
 validatePath :: FilePath -> Maybe String
 validatePath file
     | takeExtension file == ".mid" = Nothing
-    | otherwise                    = lookup notMidiFileErrKey errorMessages
+    | otherwise                    = let Just error = lookup NotMidiFile errorMessages
+                                     in Just $ error file

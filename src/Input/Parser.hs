@@ -9,14 +9,24 @@ import Music.Data hiding (track)
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
 
--- TODO: TASK 13 - add a logs messages structure
+
+-- TODO: TASK 14 - in my grammar example the interval was not an integer, make up your mind
+
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, show, melody, save, play, modify]
+    choice $ map try [track, melody, show, save, play, modify]
     getState
 
--- parse the music definition, then add it to the current state
+
+-------------------------------------------
+--             DEFINITION                --
+-------------------------------------------
+
+
+---------------- TRACK ---------------------
+
+-- parse the track definition, then add it to the current state
 track :: MyParser ()
 track = do
     string "track"
@@ -34,6 +44,8 @@ define = do
 
 groups :: MyParser [Group]
 groups = choice $ map try [noteLine, restLine, duoLine, chordLine]
+
+---------------- NOTE ---------------------
 
 noteLine :: MyParser [Group]
 noteLine = do
@@ -68,6 +80,8 @@ pitchClass = mapString stringToPitch
 durP :: MyParser Duration
 durP = spaces >> mapString stringToDuration
 
+---------------- REST ---------------------
+
 restLine :: MyParser [Group]
 restLine = do
     string "rest:"
@@ -76,6 +90,8 @@ restLine = do
     rep <- optionMaybe repLine
     eol
     restToGroups dur rep
+
+---------------- DUO ---------------------
 
 duoLine :: MyParser [Group]
 duoLine = do
@@ -89,9 +105,11 @@ duoLine = do
 oneDuo :: MyParser RepeatDuo
 oneDuo = do
     spaces
-    int         <- int -- TODO: in my grammar example the interval was not an integer, make up your mind!
+    int         <- int       -- FIXME: TASK 14
     (note, rep) <- oneNote
     return (int, note, rep)
+
+---------------- CHORD ---------------------
 
 chordLine :: MyParser [Group]
 chordLine = do
@@ -109,29 +127,7 @@ oneChord = do
     (note, rep) <- oneNote
     return (chord, note, rep)
 
-repLine :: MyParser Repeat
-repLine = spaces >> parens rep
-
-rep :: MyParser Repeat
-rep = spaces >> char 'x' >> int
-
-show :: MyParser ()
-show = do
-    string "show"
-    spaces
-    showAll <|> showOne
-
-showAll :: MyParser ()
-showAll = do
-    string "-all"
-    eol
-    showAllHelper
-
-showOne :: MyParser ()
-showOne = do
-    name  <- identifier
-    eol
-    showOneHelper name
+---------------- MELODY ---------------------
 
 melody :: MyParser ()
 melody = do
@@ -152,6 +148,34 @@ melody = do
     eol
     tryAddMusic name melodyName oct instrument
 
+
+-------------------------------------------
+--             SYSTEM OPS                -- 
+-------------------------------------------
+
+
+---------------- SHOW ---------------------
+
+show :: MyParser ()
+show = do
+    string "show"
+    spaces
+    showAll <|> showOne
+
+showAll :: MyParser ()
+showAll = do
+    string "-all"
+    eol
+    showAllHelper
+
+showOne :: MyParser ()
+showOne = do
+    name  <- identifier
+    eol
+    showOneHelper name
+
+---------------- PLAY ---------------------
+
 play :: MyParser ()
 play = do
     string "play"
@@ -170,6 +194,8 @@ playValue = do
     eol
     tryPlayValue name
 
+---------------- SAVE ---------------------
+
 save :: MyParser ()
 save = do
     string "save"
@@ -179,6 +205,8 @@ save = do
     fileName <- quotes $ many $ noneOf "\n \""
     eol
     saveToFile name fileName
+
+--------------- MODIFY ---------------------
 
 modify :: MyParser ()
 modify = do
@@ -193,6 +221,8 @@ modify = do
 modifyOp :: Name -> [MyParser ()]
 modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans, clean]
 
+--------------- INSERT ---------------------
+
 -- insert at a certain group index
 -- print the index of each group at the show command as well to make modifying easy
 insert :: Name -> MyParser ()
@@ -204,12 +234,16 @@ insert name = do
     insertName <- identifier
     callInsert name index insertName
 
+--------------- DELETE ---------------------
+
 delete :: Name -> MyParser ()
 delete name = do
     string "delete"
     spaces
     indexes <- indexes 
     callDelete name indexes
+
+--------------- REPLACE ---------------------
 
 replace :: Name -> MyParser ()
 replace name = do
@@ -219,6 +253,57 @@ replace name = do
     spaces
     replaceName <- identifier
     callReplace name indexes replaceName
+
+------------- PARALLELIZE ------------------
+
+-- only for Music values
+parallelize :: Name -> MyParser ()
+parallelize name = do
+    string "||"
+    spaces
+    paraName <- identifier
+    callParallelize name paraName
+
+-------------- SEQUENCE --------------------
+
+-- very awkward name but others clashed with Prelude functions
+-- only for tracks
+seque :: Name -> MyParser ()
+seque name = do
+    string "++"
+    num <- optionMaybe int
+    spaces
+    seqName <- identifier
+    callSequence name num seqName
+
+-------------- TRANSPOSE -------------------
+
+-- for both tracks and music
+trans :: Name -> MyParser ()
+trans name = do
+    string "transpose"
+    spaces
+    num   <- int
+    callTranspose name num
+
+--------------- CLEAN ---------------------
+
+clean :: Name -> MyParser ()
+clean name = do
+    string "clean"
+    callClean name
+
+
+-------------------------------------------
+--             HELPERS                   -- 
+-------------------------------------------
+
+
+repLine :: MyParser Repeat
+repLine = spaces >> parens rep
+
+rep :: MyParser Repeat
+rep = spaces >> char 'x' >> int
 
 index :: MyParser IndexOrError
 index = do
@@ -235,34 +320,3 @@ indexes = try (do
     idx <- index
     makeIndexes1 idx
     )
-
--- only for Music values
-parallelize :: Name -> MyParser ()
-parallelize name = do
-    string "||"
-    spaces
-    paraName <- identifier
-    callParallelize name paraName
-
--- very awkward name but others clashed with Prelude functions
--- only for tracks
-seque :: Name -> MyParser ()
-seque name = do
-    string "++"
-    num <- optionMaybe int
-    spaces
-    seqName <- identifier
-    callSequence name num seqName
-
--- for both tracks and music
-trans :: Name -> MyParser ()
-trans name = do
-    string "transpose"
-    spaces
-    num   <- int
-    callTranspose name num
-
-clean :: Name -> MyParser ()
-clean name = do
-    string "clean"
-    callClean name
