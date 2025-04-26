@@ -9,7 +9,6 @@ import Music.Data hiding (track)
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
 
--- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
 -- TODO: TASK 13 - add a logs messages structure
 
 mainParser :: MyParser ParsingState

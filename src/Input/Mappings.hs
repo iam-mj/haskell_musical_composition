@@ -6,6 +6,7 @@ import Text.Parsec
 import Data.Maybe
 
 -- TODO: ok to put this here, or should make a different file?
+-- TODO: some strings should be customizable...
 errorMessages :: [(String, String)]
 errorMessages = map (\(key, val) -> (key, "Error: " ++ val)) [
     ("NotUniqueName", "There is already a value recorded with the given name. Please enter a unique name."),
