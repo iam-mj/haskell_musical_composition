@@ -11,7 +11,7 @@ import Prelude hiding (show)
 
 -- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 -- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
--- TODO: TASK 12 - add a "clean track" of empty tracks
+-- TODO: TASK 13 - add a logs messages structure
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -189,7 +189,7 @@ modify = do
     return ()
 
 modifyOp :: Name -> [MyParser ()]
-modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
+modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans, clean]
 
 -- insert at a certain group index
 -- print the index of each group at the show command as well to make modifying easy
@@ -259,3 +259,8 @@ trans name = do
     spaces
     num   <- int
     callTranspose name num
+
+clean :: Name -> MyParser ()
+clean name = do
+    string "clean"
+    callClean name

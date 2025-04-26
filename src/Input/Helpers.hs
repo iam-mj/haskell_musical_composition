@@ -172,6 +172,14 @@ callTranspose name num = do
                 liftIO $ putStrLn $ "Melody " ++ name ++ " was transposed succesfully"
                 liftIO $ print music
 
+callClean :: Name -> MyParser ()
+callClean name = do
+    state <- getState
+    let Right track = getTrack state name
+        newTrack    = cleanT track
+    modifyState $ updateTrack name newTrack
+    liftIO $ putStrLn $ "Track " ++ name ++ " modified succesfully"
+    liftIO $ print newTrack
 
 ------------------------------------------------
 --             TRANSFORMATIONS                --
