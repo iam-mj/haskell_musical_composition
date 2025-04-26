@@ -4,33 +4,32 @@ import Input.Fundamental
 import Input.Mappings
 import Input.State
 import Input.Helpers
-import Music.Data
+import Music.Data hiding (track)
 
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
 
--- TODO: TASK 10 - might have to rename the "music" command as "track" + context
 -- TODO: TASK 11 - try to remove the IO () types in State, handle them outside thoese functions, just return the err
 -- TODO: TASK 13 - add a logs messages structure
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [musicParser, show, context, save, play, modify]
+    choice $ map try [track, show, melody, save, play, modify]
     getState
 
 -- parse the music definition, then add it to the current state
-musicParser :: MyParser ()
-musicParser = do
-    string "music"
+track :: MyParser ()
+track = do
+    string "track"
     spaces
     name <- identifier
     spaces
-    track <- braces (eol >> musicDefinition)
+    track <- braces (eol >> define)
     eol
     tryAddTrack name track
 
-musicDefinition :: MyParser Track
-musicDefinition = do
+define :: MyParser Track
+define = do
     groups <- many (identation >> groups)
     groupsToTrack groups
 
@@ -135,20 +134,24 @@ showOne = do
     eol
     showOneHelper name
 
-context :: MyParser ()
-context = do
-    string "context"
+melody :: MyParser ()
+melody = do
+    string "melody"
     spaces
-    name      <- identifier
+    melodyName <- identifier
     spaces
-    musicName <- identifier
+    char '{'
+    spaces
+    name <- identifier
     spaces
     string "oct"
     oct <- int
     spaces
     instrument <- mapString stringToInstrument
+    spaces
+    char '}'
     eol
-    tryAddMusic name musicName oct instrument
+    tryAddMusic name melodyName oct instrument
 
 play :: MyParser ()
 play = do
