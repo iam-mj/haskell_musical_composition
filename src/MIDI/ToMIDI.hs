@@ -6,6 +6,16 @@ import MIDI.Performance
 import MIDI.InstrChannel
 import MIDI.Synthesizer
 
+-- NOTE: RESEARCH 1 - find out more about division
+-- NOTE: RESEARCH 2 - better notes on toDelta
+
+-- TODO: TEST 1 - test that when having multiple tracks, one end of track does not affect the others
+
+-- NOTE: WEAKNESS 1 - makeMEvents - toDelta transformation seems to be the only part where the logic overwhelms me
+
+type MidiEvent       = (Ticks, Message)
+type InstrumentTrack = (Instrument, [MusicEvent]) -- an instrument and the events which correspond to it
+
 saveMusic :: Music -> FilePath -> IO ()
 saveMusic music file = exportFile file ((toMidi . perform) music)
 
@@ -25,60 +35,66 @@ toMidi performance =
             (TicksPerBeat division)
             (map (addEnd . fromAbsTime . makeTrack icmap) pairs)
 
-division = 96 :: Int -- TODO: find out more about this
+division = 96 :: Int -- FIXME: RESEARCH 1
 
 -- splits a performance into an association list of instruments and the events which are played by them
--- TODO: test that the events are ordered by timestamp as much as possible !! will lose performance wise :(
---       but still probably necessary :(
-splitByInst :: Performance -> [(Instrument, [MusicEvent])]
-splitByInst [] = []
+-- need it to be able to separeate a performance into midi tracks
+splitByInst :: Performance -> [InstrumentTrack]
+splitByInst []   = []
 splitByInst perf = split perf []
     where split [] pairs               = pairs 
-          split (event : events) pairs = let inst = eInst event
+          split (event : events) pairs = let inst       = eInst event
                                              instEvents = lookup inst pairs
                                          in case instEvents of
-                                            Nothing -> split events ((inst, [event]) : pairs)
+                                            Nothing      -> split events ((inst, [event]) : pairs)
                                             Just iEvents -> split events (addAssociation inst event pairs)
 
 -- adds a new event to an instrument key in an association list
-addAssociation :: Instrument -> MusicEvent -> [(Instrument, [MusicEvent])] -> [(Instrument, [MusicEvent])]
+addAssociation :: Instrument -> MusicEvent -> [InstrumentTrack] -> [InstrumentTrack]
 addAssociation key event list = newAssoc key event list []
     where newAssoc inst event [] newList = newList
-          newAssoc inst event (current@(key, events) : pairs) newList = 
-            if key == inst then newAssoc inst event pairs ((key, event : events) : newList)
-                           else newAssoc inst event pairs (current : newList)
+          newAssoc inst event (current@(key, events) : pairs) newList
+            | key == inst = (key, insertEvent event events) : newList
+            | otherwise   = newAssoc inst event pairs (current : newList)
+
+-- insert a music event into a list of music events, keeping the timestamps in order
+insertEvent :: MusicEvent -> [MusicEvent] -> [MusicEvent]
+insertEvent event []       = [event]
+insertEvent event (e : es) 
+    | eTime event < eTime e = event : e : es
+    | otherwise             = e : insertEvent event es
 
 -- ticks after the last event after which comes the end of track
 -- in order to prevent unwanted clipping
-waitTillEnd = 96 :: Ticks
+waitTillEnd = 256 :: Ticks
 
+-- FIXME: TEST 1
 -- add the end of track event
--- TODO: test that when having multiple tracks (multiple instruments), one end of track doesn't affect the other
-addEnd :: [(Ticks, Message)] -> [(Ticks, Message)]
+addEnd :: [MidiEvent] -> [MidiEvent]
 addEnd msgList = msgList ++ [(waitTillEnd, TrackEnd)]
 
 -- we'll use the NoteOn, NoteOff, ProgramChange, TempoChange
--- we'll have a track for each instrument
-makeTrack :: InstrumentChannelMap -> (Instrument, [MusicEvent]) -> [(Ticks, Message)]
+-- make a track for each instrument
+makeTrack :: InstrumentChannelMap -> InstrumentTrack -> [MidiEvent]
 makeTrack icmap (inst, events) = 
     let (ch, prgNum) = lookupChannel icmap inst
-        instrEvent = (0, ProgramChange ch prgNum)
-        tempoEvent = (0, TempoChange defTempo)
-        melody [] = []
+        instrEvent   = (0, ProgramChange ch prgNum)
+        tempoEvent   = (0, TempoChange defTempo)
+        melody []         = []
         melody (ev : evs) = let (start, stop) = makeMEvents ch ev
                             in start : insertMEvent stop (melody evs)
     in instrEvent : tempoEvent : melody events
 
 -- each MusicEvent will transform into 2 Midi events: one NoteOn & one NoteOff
-makeMEvents :: Channel -> MusicEvent -> ((Ticks, Message), (Ticks, Message))
-makeMEvents ch (MEvent {eTime = t, ePitch = pth, 
-                        eDur = dur, eVol = v}) = ((toDelta t, NoteOn ch pth (limit v)),
-                                                  (toDelta (t + dur), NoteOff ch pth (limit v)))
-    where toDelta t = round (t * 2.0 * fromIntegral division) -- TODO: take better notes on toDelta
-          limit v = max 0 (min 127 v)
+makeMEvents :: Channel -> MusicEvent -> (MidiEvent, MidiEvent)
+makeMEvents ch (MEvent {eTime = t, ePitch = pth, eDur = dur, eVol = v}) = 
+    ((toDelta t, NoteOn ch pth (limit v)), (toDelta (t + dur), NoteOff ch pth (limit v)))
+    where toDelta t = round (t * 2.0 * fromIntegral division) -- FIXME: RESEARCH 2
+          limit v   = max 0 (min 127 v)
 
 -- insert a midi event into a list of midi events so that the timestamps are in ascending order
-insertMEvent :: (Ticks, Message) -> [(Ticks, Message)] -> [(Ticks, Message)]
+insertMEvent :: MidiEvent -> [MidiEvent] -> [MidiEvent]
 insertMEvent e [] = [e]
-insertMEvent e@(t, _) (e1@(t1, _) : es) = if t < t1 then e : e1 : es
-                                                    else e1 : insertMEvent e es
+insertMEvent e@(t, _) (e1@(t1, _) : es) 
+    | t < t1    = e  : e1 : es 
+    | otherwise = e1 : insertMEvent e es

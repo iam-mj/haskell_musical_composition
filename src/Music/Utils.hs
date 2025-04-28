@@ -25,27 +25,27 @@ repeatN n note = repeatG n (Single note)
 -- get primitive duration
 durationP :: Primitive -> Duration
 durationP (Note _ dur _) = dur
-durationP (Rest dur) = dur
+durationP (Rest dur)     = dur
 
 -- get duration of a group
 durationG :: Group -> Duration
-durationG (Single primitive) = durationP primitive
-durationG (Duo _ primitive) = durationP primitive
+durationG (Single primitive)  = durationP primitive
+durationG (Duo _ primitive)   = durationP primitive
 durationG (Chord _ primitive) = durationP primitive
 
 -- get duration of a track
 durationT :: Track -> Duration
-durationT EmptyT = 0
-durationT (Prim group) = durationG group
+durationT EmptyT              = 0
+durationT (Prim group)        = durationG group
 durationT (track1 :+: track2) = durationT track1 + durationT track2
 
 -- get duration of an extended track
 durationET :: TrackE -> Duration
-durationET EmptyET = 0
+durationET EmptyET                 = 0
 durationET (PrimET (Note _ dur _)) = dur
-durationET (PrimET (Rest dur)) = dur
-durationET (track1 :++: track2) = durationET track1 + durationET track2
-durationET (track1 :::: track2) = max (durationET track1) (durationET track2)
+durationET (PrimET (Rest dur))     = dur
+durationET (track1 :++: track2)    = durationET track1 + durationET track2
+durationET (track1 :::: track2)    = max (durationET track1) (durationET track2)
 
 -- get the list of groups inside a track
 unlink :: Track -> [Group]
@@ -71,7 +71,7 @@ lengthM (music1 ::: music2) = lengthM music1 + lengthM music2
 -- insert a track inside another track at a certain position
 insertT :: Track -> Int -> Track -> Track
 insertT track idx insertTr =
-    let groupsTrack = unlink track
+    let groupsTrack  = unlink track
         groupsInsert = unlink insertTr
     in link $ insertG groupsTrack idx groupsInsert 0
     where
