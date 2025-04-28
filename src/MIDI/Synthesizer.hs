@@ -10,11 +10,7 @@ defTempo = 500000 :: Int
 
 -- NOTE: RESEARCH 1 - look more into the PMMsg form
 -- NOTE: RESEARCH 2 - do i actually need milliseconds...?
--- NOTE: RESEARCH 3 - PPQs??
-
--- TODO: TASK 1 - find bug: i have a slight feeling that the rendering isn't done correctly...
--- TODO: TASK 2 - this concat tracks won't work with more than one track!! - actually most of it might not
---              - work for more tracks which are intertwined - would need multiple program changes
+-- NOTE: RESEARCH 3 - PPQs??s
 
 openDevice :: IO (Either PMError PMStream)
 openDevice = do
@@ -34,7 +30,7 @@ playMidiFile midiFile = do
             result <- importFile midiFile
             case result of
                 Left err   -> putStrLn $ "Error loading MIDI file: " ++ err
-                Right midi -> sendMidiEvents stream (getPPQ midi) (concat (tracks midi)) -- FIXME: TASK 2
+                Right midi -> sendMidiEvents stream (getPPQ midi) (orderTracks (tracks midi))
             _ <- close stream
             return ()
     _ <- terminate
@@ -47,11 +43,28 @@ playMidi midi = do
     case open of
         Left err     -> putStrLn "Error opening the default device" >> print err
         Right stream -> do
-            sendMidiEvents stream (getPPQ midi) (concat (tracks midi)) -- FIXME: TASK 2 
+            sendMidiEvents stream (getPPQ midi) (orderTracks (tracks midi)) 
             _ <- close stream
             return ()
     _ <- terminate
     return ()
+
+orderTracks :: [[(Ticks, Message)]] -> [(Ticks, Message)]
+orderTracks list = let absList = map backToAbs list
+                   in foldl mergeTracks [] absList
+
+-- when merging the tracks, a program change to indicate the instrument is transmited as well
+mergeTracks :: [(Ticks, Message)] -> [(Ticks, Message)] -> [(Ticks, Message)]
+mergeTracks list [] = list
+mergeTracks [] list = list
+mergeTracks (h1@(t1, mgs1) : tail1) (h2@(t2, mgs2) : tail2)
+    | t1 < t2   = h1 : mergeTracks tail1 (h2 : tail2)
+    | otherwise = h2 : mergeTracks (h1 : tail1) tail2
+
+backToAbs :: [(Ticks, Message)] -> [(Ticks, Message)]
+backToAbs list = accBackToAbs list 0
+    where accBackToAbs [] time = []
+          accBackToAbs ((time, msg) : rest) currTime = (time + currTime, msg) : accBackToAbs rest (time + currTime)
 
 -- FIXME: RESEARCH 3
 defPPQ = 480 :: Int
