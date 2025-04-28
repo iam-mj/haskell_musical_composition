@@ -61,6 +61,7 @@ oneNote = do
     spaces
     (pitch, ch) <- pitchP
     dur         <- durP
+    spaces
     rep         <- optionMaybe rep
     makeRepeatNote pitch dur ch rep
 
@@ -300,10 +301,10 @@ clean name = do
 
 
 repLine :: MyParser Repeat
-repLine = spaces >> parens rep
+repLine = parens rep
 
 rep :: MyParser Repeat
-rep = spaces >> char 'x' >> int
+rep = char 'x' >> int
 
 index :: MyParser IndexOrError
 index = do
