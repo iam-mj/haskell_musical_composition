@@ -24,6 +24,11 @@ lookupChannel icmap instr = let channel = fromJust $ lookup instr icmap
                                 program = fromJust $ lookup instr gmsmap
                             in (channel, program)
 
+-- inverse of gmsmap
+reverseGmsmap :: [(ProgramNumber, Instrument)]
+reverseGmsmap = map swap gmsmap
+    where swap (instr, pgrNum) = (pgrNum, instr)
+
 -- General Midi Standard Map of instruments to their respective program numbers
 gmsmap :: [(Instrument, ProgramNumber)]
 gmsmap = [

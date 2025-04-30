@@ -10,6 +10,8 @@ import Music.Utils
 -- TODO: TASK 2 - clean music when perf -> music
 -- TODO: TASK 3 - octave increase ?? when perf -> music
 
+-- NOTE: the PTime is held in relative beats, where 1 beat = 1 whole note
+
 type AbsPitch = Int
 type Volume   = Int
 type PTime    = Double
@@ -29,8 +31,9 @@ data MusicEvent = MEvent {
     eVol :: Volume            -- volume from 0–127
     } deriving Show
 
-defVolume = 64 :: Volume
+defVolume   = 64  :: Volume
 emptyPitch = 0 :: AbsPitch
+emptyEvent = MEvent 0 noInstrument 0 0 0 :: MusicEvent
 
 ----------------------------------------------
 --         MUSIC TO PERFORMANCE             --

@@ -6,7 +6,7 @@ import Control.Concurrent (threadDelay)
 import Data.List (sortOn)
 import Data.Maybe (fromJust)
 
-defTempo = 500000 :: Int
+defTempo = 500000 :: Int -- 120 BPM
 
 -- NOTE: RESEARCH 1 - look more into the PMMsg form
 -- NOTE: RESEARCH 2 - do i actually need milliseconds...?

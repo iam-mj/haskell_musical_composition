@@ -30,6 +30,7 @@ library
         MIDI.ToMIDI
         MIDI.InstrChannel
         MIDI.Synthesizer
+        MIDI.FromMIDI
         Input.Parser
         Input.Fundamental
         Input.Mappings
