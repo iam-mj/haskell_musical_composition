@@ -6,11 +6,18 @@ import Music.Utils
 -- NOTE: LACK 1 - set the volume somewhere, or document the weakness
 -- NOTE: LACK 2 - no context (tempo, metro)
 
+-- TODO: TASK 1 - show octave change - music & track
+-- TODO: TASK 2 - clean music when perf -> music
+-- TODO: TASK 3 - octave increase ?? when perf -> music
+
 type AbsPitch = Int
 type Volume   = Int
 type PTime    = Double
 type DurT     = Double
 type Performance = [MusicEvent]
+
+type InstrSplit    = [(Instrument, Performance)]
+type InstrOctSplit = [(Instrument, [(Octave, Performance)])]
 
 -- each Music value ready to be played should be first transformed into 
 -- an event list more closer to what MIDI files expect
@@ -24,6 +31,10 @@ data MusicEvent = MEvent {
 
 defVolume = 64 :: Volume
 emptyPitch = 0 :: AbsPitch
+
+----------------------------------------------
+--         MUSIC TO PERFORMANCE             --
+----------------------------------------------
 
 -- note: should always be between 0-127
 -- note: middle C (C, 4) should be 60
@@ -42,10 +53,97 @@ merge p1@(e1 : es1) p2@(e2 : es2)
 perform :: Music -> Performance
 perform (Music trackE octave instr) = perf trackE octave instr 0
     where perf trE oct ins time = case trE of
-            EmptyET                      -> return $ MEvent time ins 0 0 0 
-            PrimET (Note pit dur change) -> return $ MEvent time ins (absPitch pit oct change) dur defVolume 
-            PrimET (Rest dur)            -> return $ MEvent time ins emptyPitch dur defVolume 
+            EmptyET                      -> return $ MEvent time ins 0 0 0
+            PrimET (Note pit dur change) -> return $ MEvent time ins (absPitch pit oct change) dur defVolume
+            PrimET (Rest dur)            -> return $ MEvent time ins emptyPitch dur defVolume
             trackE1 :++: trackE2         -> perf trackE1 oct ins time ++ perf trackE2 oct ins (time + durationET trackE1)
             trackE1 :::: trackE2         -> merge (perf trackE1 oct ins time) (perf trackE2 oct ins time)
 perform (music1 ::: music2) = merge (perform music1) (perform music2)
 
+
+----------------------------------------------
+--         PERFORMANCE TO MUSIC             --
+----------------------------------------------
+
+-- transform a performance back into a music piece
+unperform :: Performance -> Music
+unperform events = let instrSplit    = splitPerfByInstr events        -- split by instruments
+                       instrOctSplit = splitInstrByOctave instrSplit  -- split again by octave
+                   in removeEmpty $ splitToMusic instrOctSplit
+
+-- remove the leftover empty music from splitToMusic
+removeEmpty :: Music -> Music
+removeEmpty music@(Music {}) = music
+removeEmpty (music1 ::: music2)
+    | music1 == emptyMusic = removeEmpty music2
+    | music2 == emptyMusic = removeEmpty music1
+    | otherwise            = removeEmpty music1 ::: removeEmpty music2
+
+-- split the performance events by instrument
+splitPerfByInstr :: Performance -> InstrSplit
+splitPerfByInstr events = splitByInstr events []
+    where splitByInstr [] list       = list
+          splitByInstr (e : es) list =
+            let instr       = eInst e
+                instrEvents = lookup instr list
+            in case instrEvents of
+                Nothing     -> splitByInstr es ((instr, [e]) : list)
+                Just events -> splitByInstr es (updateList instr (e : events) list)
+
+-- split performance events by octave
+-- note: will have the actual octave in octave changeit
+splitInstrByOctave :: InstrSplit -> InstrOctSplit
+splitInstrByOctave instrSplit = splitOctave instrSplit []
+    where splitOctave [] list = list
+          splitOctave ((instr, events) : rest) list = splitOctave rest ((instr, makeOctaveSplit events []) : list)
+          makeOctaveSplit [] list = list
+          makeOctaveSplit (e : es) list =
+            let (_, oct)  = pitch (ePitch e) noChange
+                octEvents = lookup oct list
+            in case octEvents of
+                Nothing     -> makeOctaveSplit es ((oct, [e]) : list)
+                Just events -> makeOctaveSplit es (updateList oct (e : events) list)
+
+-- transform a instrument & octave split into music
+splitToMusic :: InstrOctSplit -> Music
+splitToMusic []                       = emptyMusic
+splitToMusic ((instr, events) : rest) = octSplitToMusic instr events
+    where octSplitToMusic instr []                     = emptyMusic
+          octSplitToMusic instr ((oct, events) : rest) =
+            let orderedEvents = orderEvents events
+                track         = eventsToTrack orderedEvents
+                cleanTrack    = cleanET track
+            in Music cleanTrack oct instr ::: octSplitToMusic instr rest
+
+-- order events after the time they trigger
+orderEvents :: Performance -> Performance
+orderEvents list = makeOrdered list []
+    where makeOrdered [] list       = list
+          makeOrdered (e : es) list = makeOrdered es (insertEvent e list)
+          insertEvent e [] = [e]
+          insertEvent e list@(e1 : es)
+            | eTime e1 < eTime e = e1 : insertEvent e es
+            | otherwise          = e  : list
+
+-- transform events to an extended track
+-- note: three cases when making a track:
+--    a) notes rendered at the same time
+--    b) notes rendered one after the other
+--    c) notes rendered one after the other but with some time between them (here, insert a rest)
+eventsToTrack :: Performance -> TrackE
+eventsToTrack []     = EmptyET
+eventsToTrack events = makeTrack events 0 0 EmptyET EmptyET
+    where makeTrack [] _ _ lastStructure track = track :++: lastStructure
+          makeTrack (e : es) lastTime lastDur newStructure track
+            | eTime e == lastTime           = makeTrack es lastTime (max lastDur (eDur e)) (newStructure :::: toTrack e) track
+            | eTime e - lastTime == lastDur = makeTrack es (eTime e) (eDur e) (toTrack e) (track :++: newStructure)
+            | otherwise                     = let timeDiff = eTime e - lastTime - lastDur
+                                              in makeTrack es (eTime e) (eDur e) (toTrack e) (track :++: insertRest timeDiff)
+                                              where insertRest dur = PrimET $ Rest dur
+
+-- transform one event back to a primitive
+toTrack :: MusicEvent -> TrackE
+toTrack event
+    | ePitch event == 0 = PrimET $ Rest $ eDur event
+    | otherwise         = let (ptch, _) = pitch (ePitch event) noChange
+                          in PrimET $ Note ptch (eDur event) noChange

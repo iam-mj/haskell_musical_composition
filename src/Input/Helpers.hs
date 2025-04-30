@@ -299,8 +299,6 @@ chordsToGroups repeatChords repLine = do
 --                 MAKERS                     --
 ------------------------------------------------
 
-noChange = 0 :: OctaveChange
-
 makePitchWithChange :: Pitch -> Maybe OctaveChange -> MyParser PitchWithChange
 makePitchWithChange pitch ch = do
     case ch of

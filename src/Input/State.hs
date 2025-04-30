@@ -77,12 +77,6 @@ getValue state name =
                             Just music -> Just $ Right music
         Just track  -> Just $ Left track
 
-updateList :: Name -> a -> [(Name, a)] -> [(Name, a)]
-updateList name newValue [] = []
-updateList name newValue ((name', value) : rest)
-    | name' == name = (name', newValue) : rest
-    | otherwise     = (name', value) : updateList name newValue rest
-
 -- replace a track with a new value
 updateTrack :: Name -> Track -> ParsingState -> ParsingState
 updateTrack name track state = state {tracks = updateList name track (tracks state)}

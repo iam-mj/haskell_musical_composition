@@ -2,6 +2,10 @@ module Music.Utils where
 
 import Music.Data
 
+noChange = 0 :: OctaveChange
+noInstrument = AcousticGrandPiano :: Instrument
+emptyMusic = Music EmptyET 0 noInstrument
+
 -- works as expected, but lots of paranteses are printed
 link :: [Group] -> Track
 link [] = EmptyT
@@ -113,6 +117,13 @@ addRepeatT track addTr num = case num of
                                 Nothing -> track :+: addTr
                                 Just nr -> track :+: repeatT nr addTr
 
+
+updateList :: Eq a => a -> b -> [(a, b)] -> [(a, b)]
+updateList name newValue [] = []
+updateList name newValue ((name', value) : rest)
+    | name' == name = (name', newValue) : rest
+    | otherwise     = (name', value) : updateList name newValue rest
+
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track
 -- parallelizeT EmptyT track = track
@@ -126,11 +137,21 @@ addRepeatT track addTr num = case num of
 
 -- remove all empty groups from a succesion of groups in a track
 cleanT :: Track -> Track
-cleanT EmptyT = EmptyT
-cleanT track@(Prim group) = track
-cleanT (EmptyT :+: groups) = cleanT groups
-cleanT (groups :+: EmptyT) = cleanT groups
+cleanT EmptyT                = EmptyT
+cleanT track@(Prim group)    = track
+cleanT (EmptyT :+: groups)   = cleanT groups
+cleanT (groups :+: EmptyT)   = cleanT groups
 cleanT (groupsL :+: groupsR) = cleanT groupsL :+: cleanT groupsR
+
+cleanET :: TrackE -> TrackE
+cleanET EmptyET                = EmptyET
+cleanET track@(PrimET _)       = track
+cleanET (EmptyET :++: groups)  = cleanET groups
+cleanET (groups :++: EmptyET)  = cleanET groups
+cleanET (groupsL :++: groupsR) = cleanET groupsL :++: cleanET groupsR
+cleanET (EmptyET :::: groups)  = cleanET groups
+cleanET (groups :::: EmptyET)  = cleanET groups 
+cleanET (groupsL :::: groupsR) = cleanET groupsL :::: cleanET groupsR
 
 -- turn a pitch into an int
 pitchToInt :: Pitch -> Int

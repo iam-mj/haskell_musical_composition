@@ -38,7 +38,6 @@ cleanTrack = cleanT uncleanTrack
 
 trackE = interpret $ link [myGroup, myDuo, myChord]
 
--- TODO: something weird happens if you try to play too many notes at the same time?
 m1 = music [trackE] 4 Violin
 m2 = music [trackE, trackE] 4 Violin
 m3 = music [trackE, trackE, trackE] 4 Violin
@@ -47,10 +46,9 @@ p1 = perform m1
 p2 = perform m2
 
 -- let's try composing Merry-Go-Round of Life
--- TODO: they're supposed to be en, but would sound kinda bad :)
-q1 = repeatT 3 $ link [duo 3 (note B qn), duo 4 (noteInc C qn)]
-q2 = repeatT 3 $ link [duo 3 (note A qn), duo 3 (note B qn)]
-q3 = repeatT 3 $ link [duo 4 (note G qn), duo 3 (note A qn)]
+q1 = repeatT 3 $ link [duo 3 (note B en), duo 4 (noteInc C en)]
+q2 = repeatT 3 $ link [duo 3 (note A en), duo 3 (note B en)]
+q3 = repeatT 3 $ link [duo 4 (note G en), duo 3 (note A en)]
 tr1 = linkT [q1, q2, q3]
 
 mgr = music [interpret tr1] 4 AcousticGrandPiano

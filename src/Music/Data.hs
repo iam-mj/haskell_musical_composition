@@ -6,15 +6,15 @@ module Music.Data where
 type Duration = Double -- where a whole note has a 1.0 duration, half a note has 0.5 ...
 
 -- the "pitchToInt" function depends on these constructors
-data Pitch = A | B | C | D | E | F | G -- TODO: add more accessories?
+data Pitch =  A  | B  | C  | D  | E  | F  | G
             | As | Bs | Cs | Ds | Es | Fs | Gs
             | Af | Bf | Cf | Df | Ef | Ff | Gf 
-            deriving Show
+            deriving (Show, Eq)
 
 type OctaveChange = Int
 
 data Primitive = Note Pitch Duration OctaveChange | Rest Duration
-                deriving Show
+                deriving (Show, Eq)
 
 type Interval = Int -- in semitones
 
@@ -28,7 +28,7 @@ data Chord = MajorThird | MinorThird | CustomChord [Int]
 -- a group of notes sang in parallel
 data Group = Single Primitive
             | Duo Interval Primitive -- root note + distance from it
-            | Chord Chord Primitive -- the type of chord + the root note
+            | Chord Chord Primitive  -- the type of chord + the root note
             deriving Show
 
 data Track = EmptyT
@@ -40,6 +40,7 @@ data TrackE = EmptyET            -- nothing
             | PrimET Primitive   -- note / rest
             | TrackE :++: TrackE -- sequence operator
             | TrackE :::: TrackE -- parallel operator
+            deriving Eq
 
 type Octave = Int -- < 12
 
@@ -47,7 +48,7 @@ type Octave = Int -- < 12
 -- as well as a instrument
 data Music = Music TrackE Octave Instrument
             | Music ::: Music
-
+            deriving Eq
 
 -- constructor functions
 note :: Pitch -> Duration -> Primitive
@@ -85,6 +86,7 @@ bn    = 2;     wn    = 1
 hn    = 1/2;   qn    = 1/4
 en    = 1/8;   sn    = 1/16
 tn    = 1/32;  sfn   = 1/64
+
 
 -- from the midi standard
 data Instrument = 
