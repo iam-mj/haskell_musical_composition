@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Replace case with maybe" #-}
 module Input.Helpers where
 
 import Input.State
@@ -45,6 +47,22 @@ mapString list = do
 log :: String -> MyParser ()
 log = liftIO . putStrLn
 
+getTrackAnd :: Name -> (Track -> MyParser ()) -> MyParser ()
+getTrackAnd name parser = do
+    state <- getState
+    let gotTrack = getTrack state name
+    case gotTrack of 
+        Left err    -> log err
+        Right track -> parser track
+
+getMusicAnd :: Name -> (Music -> MyParser ()) -> MyParser ()
+getMusicAnd name parser = do
+    state <- getState
+    let gotMusic     = getMusic state name
+    case gotMusic of
+        Left err    -> log err
+        Right music -> parser music
+
 tryAddTrack :: Name -> Track -> MyParser ()
 tryAddTrack name track = do
     state <- getState
@@ -60,25 +78,24 @@ tryAddTrack name track = do
             log $ message name
 
 tryAddMusic :: Name -> Name -> Int -> Instrument -> MyParser ()
-tryAddMusic name musicName oct instrument = do
-    -- get the track from the current state and create the music with the given context
-    state <- getState
-    let gotTrack = getTrack state name
-    case gotTrack of
-        Left err    -> log err
-        Right track -> do
-            let music       = Music (interpret track) oct instrument
-            -- try to add the new melody to the state
-            let newState = addMusic musicName music state
-            case newState of
-                Left err    -> do 
-                    let Just message = lookup MelodyAddFail logs
-                    log err
-                    log $ message musicName
-                Right newSt -> do
-                    let Just message = lookup MelodyAddSuccess logs
-                    putState newSt
-                    log $ message musicName
+tryAddMusic name musicName oct instrument = getTrackAnd name createMusic
+    where createMusic track = do
+            state <- getState
+            let music = Music (interpret track) oct instrument
+            callAddMusic musicName music state
+            
+callAddMusic :: Name -> Music -> ParsingState -> MyParser ()
+callAddMusic name music state = do
+    let newState = addMusic name music state
+    case newState of
+        Left err    -> do 
+            let Just message = lookup MelodyAddFail logs
+            log err
+            log $ message name
+        Right newSt -> do
+            let Just message = lookup MelodyAddSuccess logs
+            putState newSt
+            log $ message name
 
 showAllHelper :: MyParser ()
 showAllHelper = do
@@ -91,147 +108,97 @@ showOneHelper name = do
     liftIO $ printValue state name
 
 tryPlayFile :: String -> MyParser ()
-tryPlayFile fileName = do
-    let validationErr = validatePath fileName
-    case validationErr of
-        Nothing  -> liftIO $ playMidiFile fileName
-        Just err -> log err
+tryPlayFile fileName = validatePathAnd fileName (liftIO $ playMidiFile fileName)
 
 tryPlayValue :: Name -> MyParser ()
-tryPlayValue name = do
-    state <- getState
-    let gotMusic = getMusic state name
-    case gotMusic of
-        Left err    -> log err
-        Right music -> liftIO $ playMusic music
+tryPlayValue name = getMusicAnd name (liftIO . playMusic)
 
-saveToFile :: Name -> String -> MyParser ()
-saveToFile name fileName = do
+validatePathAnd :: String -> MyParser () -> MyParser ()
+validatePathAnd fileName parser = do
     let validationErr = validatePath fileName
     case validationErr of
-        Nothing -> do
-            state <- getState
-            let gotMusic = getMusic state name
-            case gotMusic of
-                Left err    -> log err
-                Right music -> do
-                    let Just message = lookup FileSave logs
-                    liftIO $ saveMusic music fileName
-                    log $ message fileName
+        Nothing  -> parser
         Just err -> log err
 
+saveToFile :: Name -> String -> MyParser ()
+saveToFile name fileName = validatePathAnd fileName saveFile 
+    where saveFile       = getMusicAnd name makeSave
+          makeSave music = do
+                let Just message = lookup FileSave logs
+                liftIO $ saveMusic music fileName
+                log $ message fileName
+
 loadFromFile :: Name -> String -> MyParser ()
-loadFromFile name fileName = do
-    let validationErr = validatePath fileName
-    case validationErr of
-        Nothing -> do
+loadFromFile name fileName = validatePathAnd fileName loadFile 
+    where loadFile = do
             state  <- getState
             loaded <- liftIO $ loadMusic fileName
             let Just loadFail = lookup MelodyLoadFail logs
             case loaded of
                 Nothing    -> log $ loadFail fileName
-                Just music -> do
-                    let newState = addMusic name music state
-                    case newState of
-                        Left err    -> do 
-                            let Just message = lookup MelodyAddFail logs
-                            log err
-                            log $ message name
-                        Right newSt -> do
-                            let Just message = lookup MelodyAddSuccess logs
-                            putState newSt
-                            log $ message name
-        Just err -> log err
+                Just music -> callAddMusic name music state
+
+modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
+modifyTrack name newTrack message = do
+    modifyState $ updateTrack name newTrack
+    log $ message name
+    liftIO $ print newTrack
+
+modifyMusic :: Name -> Music -> (String -> String) -> MyParser ()
+modifyMusic name newMusic message = do
+    modifyState $ updateMusic name newMusic
+    log $ message name
+    liftIO $ print newMusic
 
 callInsert :: Name -> IndexOrError -> Name -> MyParser ()
 callInsert name idx insertName = do
     case idx of
         Left err  -> log err
         Right idx -> do
-            state <- getState
-            let gotInsert = getTrack state insertName
-                gotTrack  = getTrack state name
-            case gotInsert of
-                Left err     -> log err
-                Right insert -> do
-                    case gotTrack of
-                        Left err    -> log err
-                        Right track -> do
-                            let newTrack     = insertT track idx insert
-                                Just message = lookup TrackModifySuccess logs
-                            modifyState $ updateTrack name newTrack
-                            log $ message name
-                            liftIO $ print newTrack
+            getTrackAnd insertName getTrackWithName
+            where getTrackWithName insertTrack    = getTrackAnd name (makeInsertion insertTrack)
+                  makeInsertion insertTrack track = do
+                    let newTrack     = insertT track idx insertTrack
+                        Just message = lookup TrackModifySuccess logs
+                    modifyTrack name newTrack message
 
 callDelete :: Name -> IndexesOrError -> MyParser ()
 callDelete name indexes = do
     case indexes of
         Left err   -> log err
         Right idxs -> do
-            state <- getState
-            let gotTrack = getTrack state name
-            case gotTrack of
-                Left err    -> log err
-                Right track -> do
+            getTrackAnd name deleteTrack
+            where deleteTrack track = do
                     let newTrack     = deleteT track idxs
                         Just message = lookup TrackModifySuccess logs
-                    modifyState $ updateTrack name newTrack
-                    log $ message name
-                    liftIO $ print newTrack
+                    modifyTrack name newTrack message
 
 callReplace :: Name -> IndexesOrError -> String -> MyParser ()
 callReplace name indexes replaceName = do
     case indexes of
         Left err   -> log err
-        Right idxs -> do
-            state <- getState
-            let gotTrack     = getTrack state name
-                gotReplaceTr = getTrack state replaceName
-            case gotTrack of
-                Left err    -> log err
-                Right track -> do
-                    case gotReplaceTr of
-                        Left err        -> log err
-                        Right replaceTr -> do
-                            let newTrack     = replaceT track idxs replaceTr
-                                Just message = lookup TrackModifySuccess logs
-                            modifyState $ updateTrack name newTrack
-                            log $ message name
-                            liftIO $ print newTrack
+        Right idxs -> getTrackAnd name getReplaceTrack
+            where getReplaceTrack track           = getTrackAnd replaceName (makeReplacement track)
+                  makeReplacement track replaceTr = do
+                    let newTrack     = replaceT track idxs replaceTr
+                        Just message = lookup TrackModifySuccess logs
+                    modifyTrack name newTrack message
 
 callParallelize :: Name -> Name -> MyParser ()
-callParallelize name paraName = do
-    state <- getState
-    let gotMusic     = getMusic state name
-        gotParaMusic = getMusic state paraName
-    case gotMusic of
-        Left err    -> log err
-        Right music -> do 
-            case gotParaMusic of
-                Left err        -> log err
-                Right paraMusic -> do
-                    let newMusic     = music ::: paraMusic
-                        Just message = lookup MelodyModifySuccess logs
-                    modifyState $ updateMusic name newMusic
-                    log $ message name
-                    liftIO $ print newMusic
+callParallelize name paraName = getMusicAnd name getParaName
+    where getParaName music        = getMusicAnd paraName (makePara music)
+          makePara music paraMusic = do
+            let newMusic     = music ::: paraMusic
+                Just message = lookup MelodyModifySuccess logs
+            modifyMusic name newMusic message
 
 callSequence :: Name -> Maybe Int -> Name -> MyParser ()
-callSequence name num seqName = do
-    state <- getState
-    let gotTrack = getTrack state name
-        gotSeqTr = getTrack state seqName
-    case gotTrack of
-        Left err    -> log err
-        Right track -> do
-            case gotSeqTr of
-                Left err    -> log err
-                Right seqTr -> do
-                    let newTrack     = addRepeatT track seqTr num
-                        Just message = lookup TrackModifySuccess logs
-                    modifyState $ updateTrack name newTrack
-                    log $ message name
-                    liftIO $ print newTrack
+callSequence name num seqName = getTrackAnd name getSeqTrack
+    where getSeqTrack track   = getTrackAnd seqName (makeSeq track)
+          makeSeq track seqTr = do
+            let newTrack     = addRepeatT track seqTr num
+                Just message = lookup TrackModifySuccess logs
+            modifyTrack name newTrack message
 
 callTranspose :: Name -> Int -> MyParser ()
 callTranspose name num = do
@@ -243,27 +210,17 @@ callTranspose name num = do
         Right structure -> case structure of
             Left track  -> do
                 let Just message = lookup TrackTransSuccess logs
-                modifyState $ updateTrack name track
-                log $ message name
-                liftIO $ print track
+                modifyTrack name track message
             Right music -> do
                 let Just message = lookup MelodyTransSuccess logs
-                modifyState $ updateMusic name music 
-                log $ message name
-                liftIO $ print music
+                modifyMusic name music message
 
 callClean :: Name -> MyParser ()
-callClean name = do
-    state <- getState
-    let gotTrack = getTrack state name
-    case gotTrack of
-        Left err    -> log err
-        Right track -> do
+callClean name = getTrackAnd name cleanTr 
+    where cleanTr track = do
             let newTrack     = cleanT track
                 Just message = lookup TrackModifySuccess logs
-            modifyState $ updateTrack name newTrack
-            log $ message name
-            liftIO $ print newTrack
+            modifyTrack name newTrack message
 
 
 
