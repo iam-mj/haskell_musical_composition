@@ -15,7 +15,7 @@ import Prelude hiding (show)
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, save, play, modify]
+    choice $ map try [track, melody, show, save, load, play, modify]
     getState
 
 
@@ -206,6 +206,18 @@ save = do
     fileName <- quotes $ many $ noneOf "\n \""
     eol
     saveToFile name fileName
+
+---------------- LOAD ----------------------
+
+load :: MyParser ()
+load = do
+    string "load"
+    spaces
+    fileName <- quotes $ many $ noneOf " \""
+    spaces
+    name <- identifier
+    eol
+    loadFromFile name fileName
 
 --------------- MODIFY ---------------------
 

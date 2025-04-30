@@ -10,6 +10,13 @@ import Data.Maybe (fromJust)
 
 -- TODO: TEST 1 - make sure the first events really are the instrument + tempo sets
 
+loadMusic :: FilePath -> IO (Maybe Music)
+loadMusic fileName = do
+    result <- loadMidi fileName
+    case result of
+        Nothing   -> return Nothing
+        Just midi -> return (Just $ unperform $ fromMidi midi)
+
 -- transform a midi value into a performance
 fromMidi :: Midi -> Performance
 fromMidi midi = concatMap trackToEvents (tracks midi)

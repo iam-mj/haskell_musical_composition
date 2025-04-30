@@ -12,12 +12,23 @@ defTempo = 500000 :: Int -- 120 BPM
 -- NOTE: RESEARCH 2 - do i actually need milliseconds...?
 -- NOTE: RESEARCH 3 - PPQs??s
 
+-- TODO: TASK 1 - no magic strings
+
 openDevice :: IO (Either PMError PMStream)
 openDevice = do
     maybeDevice <- getDefaultOutputDeviceID
     case maybeDevice of 
         Nothing       -> putStrLn "Error getting the default output device" >> return (Left InvalidDeviceId)
         Just deviceId -> openOutput deviceId 10
+
+loadMidi :: FilePath -> IO (Maybe Midi)
+loadMidi midiFile = do
+    result <- importFile midiFile
+    case result of
+        Left err   -> do
+            putStrLn $ "Error loading MIDI file: " ++ err
+            return Nothing
+        Right midi -> return $ Just midi
 
 -- render audio of a given midi file
 playMidiFile :: FilePath -> IO ()
@@ -27,10 +38,10 @@ playMidiFile midiFile = do
     case open of
         Left err     -> putStrLn "Error opening the default device" >> print err  
         Right stream -> do
-            result <- importFile midiFile
+            result <- loadMidi midiFile
             case result of
-                Left err   -> putStrLn $ "Error loading MIDI file: " ++ err
-                Right midi -> sendMidiEvents stream (getPPQ midi) (orderTracks (tracks midi))
+                Nothing   -> return ()
+                Just midi -> sendMidiEvents stream (getPPQ midi) (orderTracks (tracks midi))
             _ <- close stream
             return ()
     _ <- terminate

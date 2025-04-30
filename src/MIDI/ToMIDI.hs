@@ -11,10 +11,10 @@ import MIDI.Synthesizer
 
 -- TODO: TEST 1 - test that when having multiple tracks, one end of track does not affect the others
 
--- NOTE: WEAKNESS 1 - makeMEvents - toDelta transformation seems to be the only part where the logic overwhelms me
-
 type MidiEvent       = (Ticks, Message)
 type InstrumentTrack = (Instrument, [MusicEvent]) -- an instrument and the events which correspond to it
+
+division = 96 :: Int -- FIXME: RESEARCH 1
 
 saveMusic :: Music -> FilePath -> IO ()
 saveMusic music file = exportFile file ((toMidi . perform) music)
@@ -22,7 +22,6 @@ saveMusic music file = exportFile file ((toMidi . perform) music)
 playMusic :: Music -> IO ()
 playMusic = playMidi . toMidi . perform
 
--- can't make them directly synthetiser-midi values cause we might want to export them
 -- turns a performance into a midi value: Midi fileType timeDev tracks
 -- Codec.Midi's fromAbsTime changes the timestamps from absolute to relative toDelta times
 toMidi :: Performance -> Midi
@@ -34,8 +33,6 @@ toMidi performance =
                 else MultiTrack)
             (TicksPerBeat division)
             (map (addEnd . fromAbsTime . makeTrack icmap) pairs)
-
-division = 96 :: Int -- FIXME: RESEARCH 1
 
 -- splits a performance into an association list of instruments and the events which are played by them
 -- need it to be able to separeate a performance into midi tracks
@@ -86,6 +83,7 @@ makeTrack icmap (inst, events) =
     in instrEvent : tempoEvent : melody events
 
 -- each MusicEvent will transform into 2 Midi events: one NoteOn & one NoteOff
+-- note: toDelta transforms relative beats (1 beat = 1 whole note) into ticks
 makeMEvents :: Channel -> MusicEvent -> (MidiEvent, MidiEvent)
 makeMEvents ch (MEvent {eTime = t, ePitch = pth, eDur = dur, eVol = v}) = 
     ((toDelta t, NoteOn ch pth (limit v)), (toDelta (t + dur), NoteOff ch pth (limit v)))
