@@ -37,6 +37,7 @@ library
         Input.State
         Input.Helpers
         Input.Messages
+        Visual.UploadFile
 
     -- Modules included in this library but not exported.
     -- other-modules:
@@ -47,7 +48,9 @@ library
         base ^>=4.17.2.0,
         HCodecs ^>=0.5.2,
         PortMidi ^>=0.2.0,
-        parsec, mtl, filepath          
+        parsec, mtl, filepath,
+        http-client, http-client-tls,
+        bytestring, http-types, text
     hs-source-dirs:   src
     default-language: Haskell2010
 
@@ -64,6 +67,8 @@ executable haskell-musical-composition
         HCodecs ^>=0.5.2,
         PortMidi ^>=0.2.0,
         parsec, mtl, filepath,
+        http-client, http-client-tls,
+        bytestring, http-types, text,
         haskell-musical-composition
 
     hs-source-dirs:   app
