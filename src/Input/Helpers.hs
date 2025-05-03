@@ -4,15 +4,19 @@ module Input.Helpers where
 
 import Input.State
 import Input.Messages
-import Music.Data
-import Text.Parsec
-import Control.Monad.IO.Class (liftIO)
-import Music.Utils
 import MIDI.Synthesizer (playMidiFile)
 import MIDI.ToMIDI (playMusic, saveMusic)
+import MIDI.FromMIDI (loadMusic)
+import Music.Data
+import Music.Utils
+import Visual.CreateScore
+
+import Text.Parsec
+import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromJust)
 import Prelude hiding (log)
-import MIDI.FromMIDI (loadMusic)
+import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory)
+import GHC.Conc.IO (threadDelay)
 
 
 ------------------------------------------------
@@ -137,6 +141,23 @@ loadFromFile name fileName = validatePathAnd fileName loadFile
             case loaded of
                 Nothing    -> log $ loadFail fileName
                 Just music -> callAddMusic name music state
+
+createScoreFromFile :: String -> MyParser ()
+createScoreFromFile fileName = validatePathAnd fileName launchScore
+    where launchScore = liftIO $ createScore fileName
+
+tempDir          = "temps/"
+defFileName name = "temps/temp_" ++ name ++ ".mid"
+
+createScoreFromMusic :: Name -> MyParser ()
+createScoreFromMusic name = getMusicAnd name launchScore
+    where launchScore music = do
+            let fileName = defFileName name
+            liftIO $ createDirectory tempDir
+            liftIO $ saveMusic music fileName
+            liftIO $ createScore fileName
+            liftIO $ removeFile fileName
+            liftIO $ removeDirectory tempDir
 
 modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do

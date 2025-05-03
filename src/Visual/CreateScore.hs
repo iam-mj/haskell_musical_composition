@@ -16,7 +16,6 @@ createScore fileName = do
   case uploadResult of
     Left error -> putStrLn error
     Right link -> do
-        print link
         -- build launch link
         -- note: urlEncode's first argument is set to true => we encode a part of a query string
         let linkBS      = BS.pack link

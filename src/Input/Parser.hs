@@ -15,7 +15,7 @@ import Prelude hiding (show)
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, save, load, play, modify]
+    choice $ map try [track, melody, show, save, load, play, score, modify]
     getState
 
 
@@ -185,9 +185,9 @@ play = do
 
 playFile :: MyParser ()
 playFile = do
-    fileName <- quotes $ many $ noneOf "\n \""
+    file <- fileName
     eol
-    tryPlayFile fileName
+    tryPlayFile file
     
 playValue :: MyParser ()
 playValue = do
@@ -203,9 +203,9 @@ save = do
     spaces
     name <- identifier
     spaces
-    fileName <- quotes $ many $ noneOf "\n \""
+    file <- fileName
     eol
-    saveToFile name fileName
+    saveToFile name file
 
 ---------------- LOAD ----------------------
 
@@ -213,11 +213,31 @@ load :: MyParser ()
 load = do
     string "load"
     spaces
-    fileName <- quotes $ many $ noneOf " \""
+    file <- fileName
     spaces
     name <- identifier
     eol
-    loadFromFile name fileName
+    loadFromFile name file
+
+--------------- SCORE ----------------------
+
+score :: MyParser ()
+score = do
+    string "score"
+    spaces
+    scoreFile <|> scoreMusic
+
+scoreFile :: MyParser ()
+scoreFile = do
+    file <- fileName
+    eol
+    createScoreFromFile file
+
+scoreMusic :: MyParser ()
+scoreMusic = do
+    music <- identifier
+    eol
+    createScoreFromMusic music
 
 --------------- MODIFY ---------------------
 
@@ -333,3 +353,6 @@ indexes = try (do
     idx <- index
     makeIndexes1 idx
     )
+
+fileName :: MyParser String
+fileName = quotes $ many $ noneOf " \""
