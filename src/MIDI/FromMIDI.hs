@@ -8,6 +8,7 @@ import MIDI.Synthesizer
 import MIDI.ToMIDI (MidiEvent, division)
 import Data.Maybe (fromJust)
 
+-- TODO: TASK 1 - make sure events in performance are ordered by time? if necessary
 -- TODO: TEST 1 - make sure the first events really are the instrument + tempo sets
 
 loadMusic :: FilePath -> IO (Maybe Music)
@@ -31,6 +32,8 @@ trackToEvents (instrEvent : tempoEvent : events) =
 getInstrument :: MidiEvent -> Instrument
 getInstrument (_, ProgramChange _ pgrNum) = fromJust $ lookup pgrNum reverseGmsmap
 
+-- transform midi events into a performance's music events
+-- note: any other midi events apart from note on / note off / trackend are ignored
 midiToMusicEvent :: Instrument -> [MidiEvent] -> [MusicEvent]
 midiToMusicEvent instr [(_, TrackEnd)]          = []
 midiToMusicEvent instr ((_, NoteOff {}) : rest) = midiToMusicEvent instr rest
@@ -41,6 +44,7 @@ midiToMusicEvent instr ((ticks, NoteOn _ ptch _) : rest) =
         newRest              = removeEvent offEvent rest
         musicEvent           = makeEvent time instr ptch offTime
     in musicEvent : midiToMusicEvent instr newRest
+midiToMusicEvent instr ((_, _) : rest)          = midiToMusicEvent instr rest
 
 -- for a certain noteOn event find the corresponding noteOff event + how many ticks after it triggers
 -- note: no [] case it should always find the noteOff event

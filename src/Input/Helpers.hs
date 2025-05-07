@@ -62,7 +62,7 @@ getTrackAnd name parser = do
 getMusicAnd :: Name -> (Music -> MyParser ()) -> MyParser ()
 getMusicAnd name parser = do
     state <- getState
-    let gotMusic     = getMusic state name
+    let gotMusic = getMusic state name
     case gotMusic of
         Left err    -> log err
         Right music -> parser music

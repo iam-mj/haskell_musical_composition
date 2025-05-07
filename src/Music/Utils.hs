@@ -120,9 +120,9 @@ addRepeatT track addTr num = case num of
 
 updateList :: Eq a => a -> b -> [(a, b)] -> [(a, b)]
 updateList name newValue [] = []
-updateList name newValue ((name', value) : rest)
-    | name' == name = (name', newValue) : rest
-    | otherwise     = (name', value) : updateList name newValue rest
+updateList name newValue (currentPair@(name', value) : rest)
+    | name' == name = (name, newValue) : rest
+    | otherwise     = currentPair : updateList name newValue rest
 
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track

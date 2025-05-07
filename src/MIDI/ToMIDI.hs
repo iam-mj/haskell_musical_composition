@@ -26,7 +26,7 @@ playMusic = playMidi . toMidi . perform
 -- Codec.Midi's fromAbsTime changes the timestamps from absolute to relative toDelta times
 toMidi :: Performance -> Midi
 toMidi performance = 
-    let pairs = splitByInst performance
+    let pairs = splitByInstr performance
         icmap = makeICMap (map fst pairs)
     in Midi (if length pairs == 1 
                 then SingleTrack 
@@ -34,32 +34,27 @@ toMidi performance =
             (TicksPerBeat division)
             (map (addEnd . fromAbsTime . makeTrack icmap) pairs)
 
--- splits a performance into an association list of instruments and the events which are played by them
--- need it to be able to separeate a performance into midi tracks
-splitByInst :: Performance -> [InstrumentTrack]
-splitByInst []   = []
-splitByInst perf = split perf []
-    where split [] pairs               = pairs 
-          split (event : events) pairs = let inst       = eInst event
-                                             instEvents = lookup inst pairs
-                                         in case instEvents of
-                                            Nothing      -> split events ((inst, [event]) : pairs)
-                                            Just iEvents -> split events (addAssociation inst event pairs)
+-- -- splits a performance into an association list of instruments and the events which are played by them
+-- -- need it to be able to separeate a performance into midi tracks
+-- splitByInst :: Performance -> [InstrumentTrack]
+-- splitByInst []   = []
+-- splitByInst perf = split perf []
+--     where split [] pairs               = pairs 
+--           split (event : events) pairs = let inst       = eInst event
+--                                              instEvents = lookup inst pairs
+--                                          in case instEvents of
+--                                             Nothing      -> split events ((inst, [event]) : pairs)
+--                                             Just iEvents -> 
+--                                                 let newEvents = insertEvent event iEvents
+--                                                 in split events (addAssociation inst newEvents pairs)
 
--- adds a new event to an instrument key in an association list
-addAssociation :: Instrument -> MusicEvent -> [InstrumentTrack] -> [InstrumentTrack]
-addAssociation key event list = newAssoc key event list []
-    where newAssoc inst event [] newList = newList
-          newAssoc inst event (current@(key, events) : pairs) newList
-            | key == inst = (key, insertEvent event events) : newList
-            | otherwise   = newAssoc inst event pairs (current : newList)
-
--- insert a music event into a list of music events, keeping the timestamps in order
-insertEvent :: MusicEvent -> [MusicEvent] -> [MusicEvent]
-insertEvent event []       = [event]
-insertEvent event (e : es) 
-    | eTime event < eTime e = event : e : es
-    | otherwise             = e : insertEvent event es
+-- -- adds a new event to an instrument key in an association list
+-- addAssociation :: Instrument -> [MusicEvent] -> [InstrumentTrack] -> [InstrumentTrack]
+-- addAssociation key events list = newAssoc key events list []
+--     where newAssoc inst events [] newList = newList
+--           newAssoc inst events (current@(cInst, cEvents) : pairs) newList
+--             | cInst == inst = newList ++ (cInst, events) : pairs
+--             | otherwise     = newAssoc inst events pairs (current : newList)
 
 -- ticks after the last event after which comes the end of track
 -- in order to prevent unwanted clipping

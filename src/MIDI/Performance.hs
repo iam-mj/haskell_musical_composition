@@ -7,8 +7,9 @@ import Music.Utils
 -- NOTE: LACK 2 - no context (tempo, metro)
 
 -- TODO: TASK 1 - show octave change - music & track
--- TODO: TASK 2 - clean music when perf -> music
+-- TODO: TASK 2 - clean music when perf -> music, after making the tracks
 -- TODO: TASK 3 - octave increase ?? when perf -> music
+-- TODO: TASK 4 - no more octave 0 rests?
 
 -- NOTE: the PTime is held in relative beats, where 1 beat = 1 whole note
 
@@ -70,7 +71,7 @@ perform (music1 ::: music2) = merge (perform music1) (perform music2)
 
 -- transform a performance back into a music piece
 unperform :: Performance -> Music
-unperform events = let instrSplit    = splitPerfByInstr events        -- split by instruments
+unperform events = let instrSplit    = splitByInstr events            -- split by instruments
                        instrOctSplit = splitInstrByOctave instrSplit  -- split again by octave
                    in removeEmpty $ splitToMusic instrOctSplit
 
@@ -83,15 +84,22 @@ removeEmpty (music1 ::: music2)
     | otherwise            = removeEmpty music1 ::: removeEmpty music2
 
 -- split the performance events by instrument
-splitPerfByInstr :: Performance -> InstrSplit
-splitPerfByInstr events = splitByInstr events []
+splitByInstr :: Performance -> InstrSplit
+splitByInstr events = splitByInstr events []
     where splitByInstr [] list       = list
           splitByInstr (e : es) list =
             let instr       = eInst e
                 instrEvents = lookup instr list
             in case instrEvents of
                 Nothing     -> splitByInstr es ((instr, [e]) : list)
-                Just events -> splitByInstr es (updateList instr (e : events) list)
+                Just events -> splitByInstr es (updateList instr (insertEvent e events) list)
+
+-- insert a music event into a list of music events, keeping the timestamps in order
+insertEvent :: MusicEvent -> [MusicEvent] -> [MusicEvent]
+insertEvent event []        = [event]
+insertEvent event (e : es) 
+    | eTime event < eTime e = event : e : es
+    | otherwise             = e : insertEvent event es
 
 -- split performance events by octave
 -- note: will have the actual octave in octave changeit
@@ -99,7 +107,7 @@ splitInstrByOctave :: InstrSplit -> InstrOctSplit
 splitInstrByOctave instrSplit = splitOctave instrSplit []
     where splitOctave [] list = list
           splitOctave ((instr, events) : rest) list = splitOctave rest ((instr, makeOctaveSplit events []) : list)
-          makeOctaveSplit [] list = list
+          makeOctaveSplit [] list       = list
           makeOctaveSplit (e : es) list =
             let (_, oct)  = pitch (ePitch e) noChange
                 octEvents = lookup oct list
@@ -110,7 +118,7 @@ splitInstrByOctave instrSplit = splitOctave instrSplit []
 -- transform a instrument & octave split into music
 splitToMusic :: InstrOctSplit -> Music
 splitToMusic []                       = emptyMusic
-splitToMusic ((instr, events) : rest) = octSplitToMusic instr events
+splitToMusic ((instr, events) : rest) = octSplitToMusic instr events ::: splitToMusic rest
     where octSplitToMusic instr []                     = emptyMusic
           octSplitToMusic instr ((oct, events) : rest) =
             let orderedEvents = orderEvents events
@@ -132,17 +140,22 @@ orderEvents list = makeOrdered list []
 -- note: three cases when making a track:
 --    a) notes rendered at the same time
 --    b) notes rendered one after the other
---    c) notes rendered one after the other but with some time between them (here, insert a rest)
+--    c) notes rendered one after the other but with some time between them (here, a rest is inserted)
+-- note: lastTime = last starting time
+--       lastDur  = duration of the latest "newStructure" carried around
 eventsToTrack :: Performance -> TrackE
 eventsToTrack []     = EmptyET
 eventsToTrack events = makeTrack events 0 0 EmptyET EmptyET
     where makeTrack [] _ _ lastStructure track = track :++: lastStructure
           makeTrack (e : es) lastTime lastDur newStructure track
-            | eTime e == lastTime           = makeTrack es lastTime (max lastDur (eDur e)) (newStructure :::: toTrack e) track
+            | eTime e == lastTime           = let newDur           = max lastDur (eDur e)
+                                                  updatedStructure = newStructure :::: toTrack e
+                                              in makeTrack es lastTime newDur updatedStructure track
             | eTime e - lastTime == lastDur = makeTrack es (eTime e) (eDur e) (toTrack e) (track :++: newStructure)
-            | otherwise                     = let timeDiff = eTime e - lastTime - lastDur
-                                              in makeTrack es (eTime e) (eDur e) (toTrack e) (track :++: insertRest timeDiff)
-                                              where insertRest dur = PrimET $ Rest dur
+            | otherwise                     = let timeDiff       = eTime e - lastTime - lastDur
+                                                  insertRest dur = PrimET $ Rest dur
+                                                  newTrack       = track :++: newStructure :++: insertRest timeDiff
+                                              in makeTrack es (eTime e) (eDur e) (toTrack e) newTrack
 
 -- transform one event back to a primitive
 toTrack :: MusicEvent -> TrackE

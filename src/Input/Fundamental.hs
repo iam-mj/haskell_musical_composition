@@ -3,6 +3,8 @@ module Input.Fundamental where
 import Text.Parsec hiding (spaces)
 import Input.State (MyParser)
 
+-- TODO: TASK 1 - at least one character for identifier!! + accept _
+
 -- tried using a lexer, but it doesn't agree with the IO monad
 
 -- end of line
