@@ -3,8 +3,6 @@ module Input.Fundamental where
 import Text.Parsec hiding (spaces)
 import Input.State (MyParser)
 
--- TODO: TASK 1 - at least one character for identifier!! + accept _
-
 -- tried using a lexer, but it doesn't agree with the IO monad
 
 -- end of line
@@ -15,7 +13,7 @@ spaces :: MyParser String
 spaces = many $ char ' '
 
 identifier :: MyParser String
-identifier = many alphaNum
+identifier = many1 (char '_' <|> alphaNum)
 
 identation :: MyParser String
 identation = many (tab <|> space)
