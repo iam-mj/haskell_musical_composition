@@ -145,6 +145,7 @@ loadFromFile name fileName = validatePathAnd fileName loadFile
 createScoreFromFile :: String -> MyParser ()
 createScoreFromFile fileName = validatePathAnd fileName launchScore
     where launchScore = liftIO $ createScore fileName
+    
 defFileName name = "resources/temp_" ++ name ++ ".mid"
 
 createScoreFromMusic :: Name -> MyParser ()

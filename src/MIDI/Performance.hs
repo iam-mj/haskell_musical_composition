@@ -131,10 +131,6 @@ orderEvents :: Performance -> Performance
 orderEvents list = makeOrdered list []
     where makeOrdered [] list       = list
           makeOrdered (e : es) list = makeOrdered es (insertEvent e list)
-          insertEvent e [] = [e]
-          insertEvent e list@(e1 : es)
-            | eTime e1 < eTime e = e1 : insertEvent e es
-            | otherwise          = e  : list
 
 -- transform events to an extended track
 -- note: three cases when making a track:

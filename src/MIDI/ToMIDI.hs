@@ -11,6 +11,8 @@ import MIDI.Synthesizer
 
 -- TODO: TEST 1 - test that when having multiple tracks, one end of track does not affect the others
 
+-- TODO: TASK 1 - can probably ignore rests to avoid them being introduced in octave 0
+
 type MidiEvent       = (Ticks, Message)
 type InstrumentTrack = (Instrument, [MusicEvent]) -- an instrument and the events which correspond to it
 

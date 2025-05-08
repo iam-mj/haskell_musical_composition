@@ -122,7 +122,7 @@ updateList :: Eq a => a -> b -> [(a, b)] -> [(a, b)]
 updateList name newValue [] = []
 updateList name newValue (currentPair@(name', value) : rest)
     | name' == name = (name, newValue) : rest
-    | otherwise     = currentPair : updateList name newValue rest
+    | otherwise     = currentPair      : updateList name newValue rest
 
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track
@@ -156,14 +156,15 @@ cleanET (groupsL :::: groupsR) = cleanET groupsL :::: cleanET groupsR
 -- turn a pitch into an int
 pitchToInt :: Pitch -> Int
 pitchToInt pitch = case pitch of
-    C -> 0; D -> 2; E -> 4; F -> 5; G -> 7; A -> 9; B -> 11;
-    Cf -> -1; Df -> 1; Ef -> 3; Ff -> 4; Gf -> 6; Af -> 8; Bf -> 10;
-    Cs -> 1; Ds -> 3; Es -> 5; Fs -> 6; Gs -> 8; As -> 10; Bs -> 12
+    C -> 0;    D -> 2;  E -> 4;  F -> 5;  G -> 7;   A -> 9;  B -> 11;
+    Cf -> -1; Df -> 1; Ef -> 3; Ff -> 4; Gf -> 6;  Af -> 8; Bf -> 10;
+    Cs -> 1;  Ds -> 3; Es -> 5; Fs -> 6; Gs -> 8; As -> 10; Bs -> 12
 
 -- turn an int into a pitch class and signal an octave change
+-- note: the octave change will give an octave as low as -1 as per the note names in English
 pitch :: Int -> OctaveChange -> (Pitch, OctaveChange)
 pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
-                     increase = n `div` 12
+                     increase = n `div` 12 - 1
           in (pitches !! (n `mod` 12), change + increase)
 
 -- increase a note's pitch by n semitones
@@ -171,7 +172,7 @@ pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
 transpose :: Int -> Primitive -> Primitive
 transpose n (Rest dur) = Rest dur -- no effect on a rest
 transpose n (Note ptch dur change) = let (newPitch, newChange) = pitch (pitchToInt ptch + n) change
-                                     in Note newPitch dur newChange
+                                     in Note newPitch dur (newChange + 1)
 
 -- transpose a group with a number of semintones
 transposeG :: Int -> Group -> Group
