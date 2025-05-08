@@ -145,19 +145,15 @@ loadFromFile name fileName = validatePathAnd fileName loadFile
 createScoreFromFile :: String -> MyParser ()
 createScoreFromFile fileName = validatePathAnd fileName launchScore
     where launchScore = liftIO $ createScore fileName
-
-tempDir          = "temps/"
-defFileName name = "temps/temp_" ++ name ++ ".mid"
+defFileName name = "resources/temp_" ++ name ++ ".mid"
 
 createScoreFromMusic :: Name -> MyParser ()
 createScoreFromMusic name = getMusicAnd name launchScore
     where launchScore music = do
             let fileName = defFileName name
-            liftIO $ createDirectory tempDir
             liftIO $ saveMusic music fileName
             liftIO $ createScore fileName
             liftIO $ removeFile fileName
-            liftIO $ removeDirectory tempDir
 
 modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do
