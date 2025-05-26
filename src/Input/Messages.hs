@@ -6,7 +6,7 @@ module Input.Messages where
 
 type Error = String
 
-data ErrorKey = NotUniqueName | NoTrackName | NoMelodyName | NoName | NegativeIndex | NotMidiFile
+data ErrorKey = NotUniqueName | NoTrackName | NoMelodyName | NoName | NegativeIndex | NotMidiFile | NoFile
                 deriving Eq
 
 errorMessages :: [(ErrorKey, String -> Error)]
@@ -16,7 +16,8 @@ errorMessages = [
     (NoMelodyName,  ("Error: No melodies found with the name " ++)),
     (NoName,        ("Error: No structures found with the name " ++)),
     (NegativeIndex, ("Error: The index must have a positive value, unlike the provided " ++)),
-    (NotMidiFile,   ("Error: Please provide a file path to a MIDI file - it should have a '.mid' extension, not " ++))]
+    (NotMidiFile,   ("Error: Please provide a file path to a MIDI file - it should have a '.mid' extension, not " ++)),
+    (NoFile,        \name -> "Error: The provided file " ++ name ++ " cannot be found")]
 
 
 ---------------------------------------------

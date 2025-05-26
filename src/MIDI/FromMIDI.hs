@@ -58,15 +58,8 @@ lookAhead ptch events = lookAheadWithTicks ptch events 0
 
 -- turn ticks into realtive beats
 -- note: 1 beat = 1 whole note
-ticksToTime :: Ticks -> PTime
+ticksToTime :: Ticks -> METime
 ticksToTime ticks = fromIntegral ticks / (2.0 * fromIntegral division)
-
--- remove a midi event from a list
--- removeEvent :: MidiEvent -> [MidiEvent] -> [MidiEvent]
--- removeEvent event [] = []
--- removeEvent event (e : es) 
---     | e == event = es
---     | otherwise  = e : removeEvent event es 
 
 -- make a music event
 makeEvent :: Double -> Instrument -> AbsPitch -> Duration -> MusicEvent

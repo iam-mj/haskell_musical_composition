@@ -3,20 +3,13 @@ module MIDI.Performance where
 import Music.Data
 import Music.Utils
 
--- NOTE: LACK 1 - set the volume somewhere, or document the weakness
--- NOTE: LACK 2 - no context (tempo, metro)
-
--- TODO: TASK 1 - show octave change - music & track
 -- TODO: TASK 2 - clean music when perf -> music, after making the tracks
--- TODO: TASK 3 - octave increase ?? when perf -> music
--- TODO: TASK 4 - no more octave 0 rests?
 
--- NOTE: the PTime is held in relative beats, where 1 beat = 1 whole note
+-- NOTE: the METime is held in relative beats, where 1 beat = 1 whole note
 
-type AbsPitch = Int
-type Volume   = Int
-type PTime    = Double
-type DurT     = Double
+type METime    = Double
+type AbsPitch  = Int
+type Volume    = Int
 type Performance = [MusicEvent]
 
 type InstrSplit    = [(Instrument, Performance)]
@@ -24,16 +17,17 @@ type InstrOctSplit = [(Instrument, [(Octave, Performance)])]
 
 -- each Music value ready to be played should be first transformed into 
 -- an event list more closer to what MIDI files expect
+-- note: volume always a default, but needed in the noteon/noteoff midi events
 data MusicEvent = MEvent {
-    eTime :: PTime,           -- onset time
-    eInst :: Instrument,      -- assigned instrument
+    eTime  :: METime,         -- onset time
+    eInst  :: Instrument,     -- assigned instrument
     ePitch :: AbsPitch,       -- pitch number from 0–127
-    eDur :: DurT,             -- note duration
-    eVol :: Volume            -- volume from 0–127
+    eDur   :: Duration,       -- note duration
+    eVol   :: Volume          -- volume from 0–127
     } deriving Show
 
-defVolume   = 64  :: Volume
-emptyPitch = 0 :: AbsPitch
+defVolume  = 64 :: Volume
+emptyPitch = 0  :: AbsPitch
 emptyEvent = MEvent 0 noInstrument 0 0 0 :: MusicEvent
 
 ----------------------------------------------

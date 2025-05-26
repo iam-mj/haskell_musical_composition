@@ -14,12 +14,13 @@ defTempo = 500000 :: Int -- 120 BPM
 
 -- TODO: TASK 1 - no magic strings
 
+-- note: second parameter of openOutput is latency: 0 => the events are sent immediately
 openDevice :: IO (Either PMError PMStream)
 openDevice = do
     maybeDevice <- getDefaultOutputDeviceID
     case maybeDevice of 
         Nothing       -> putStrLn "Error getting the default output device" >> return (Left InvalidDeviceId)
-        Just deviceId -> openOutput deviceId 10
+        Just deviceId -> openOutput deviceId 0
 
 loadMidi :: FilePath -> IO (Maybe Midi)
 loadMidi midiFile = do

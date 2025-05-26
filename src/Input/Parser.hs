@@ -11,8 +11,7 @@ import Prelude hiding (show)
 
 
 -- TODO: TASK 14 - in my grammar example the interval was not an integer, make up your mind
--- TODO: TASK 15 - allow spaces at the end of a line
--- TODO: TASK 16 - if file doesn't exist, please don't stop the whole app!
+-- TODO: TASK 17 - no note accesory actually implemented!
 
 
 mainParser :: MyParser ParsingState

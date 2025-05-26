@@ -7,7 +7,7 @@ import Input.State (MyParser)
 
 -- end of line
 eol :: MyParser Char
-eol = char '\n'
+eol = spaces >> char '\n'
 
 spaces :: MyParser String
 spaces = many $ char ' '

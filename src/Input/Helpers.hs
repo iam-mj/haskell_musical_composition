@@ -15,7 +15,8 @@ import Text.Parsec
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromJust)
 import Prelude hiding (log)
-import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory)
+import System.FilePath
+import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory, doesFileExist)
 import GHC.Conc.IO (threadDelay)
 
 
@@ -38,9 +39,24 @@ type PitchWithChange = (Pitch, OctaveChange)
 
 
 ------------------------------------------------
---               FUNCTIONAL                   --
+--                  UTILS                     --
 ------------------------------------------------
 
+
+-- check that a path is leads to a midi file
+validateMidiPath :: FilePath -> Maybe String
+validateMidiPath file
+    | takeExtension file == ".mid" = Nothing
+    | otherwise                    = let Just error = lookup NotMidiFile errorMessages
+                                     in Just $ error file
+
+-- check that a file path exists, otherwise return error
+checkFileExists :: FilePath -> IO (Maybe String)
+checkFileExists file = do
+    let Just err = lookup NoFile errorMessages
+    fileExists <- doesFileExist file
+    if fileExists then return Nothing
+    else return $ Just $ err file
 
 -- parse a string from an assciation list and return it's associated value
 mapString :: [(String, a)] -> MyParser a
@@ -50,6 +66,13 @@ mapString list = do
 
 log :: String -> MyParser ()
 log = liftIO . putStrLn
+
+
+
+------------------------------------------------
+--               FUNCTIONAL                   --
+------------------------------------------------
+
 
 getTrackAnd :: Name -> (Track -> MyParser ()) -> MyParser ()
 getTrackAnd name parser = do
@@ -119,9 +142,13 @@ tryPlayValue name = getMusicAnd name (liftIO . playMusic)
 
 validatePathAnd :: String -> MyParser () -> MyParser ()
 validatePathAnd fileName parser = do
-    let validationErr = validatePath fileName
-    case validationErr of
-        Nothing  -> parser
+    fileExists <- liftIO $ checkFileExists fileName
+    case fileExists of
+        Nothing -> do
+            let validationErr = validateMidiPath fileName
+            case validationErr of
+                Nothing  -> parser
+                Just err -> log err
         Just err -> log err
 
 saveToFile :: Name -> String -> MyParser ()

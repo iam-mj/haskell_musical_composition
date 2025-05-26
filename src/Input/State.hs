@@ -5,7 +5,6 @@ import Music.Utils
 import Music.Show
 import Input.Messages
 import Text.Parsec
-import System.FilePath
 import Control.Monad.Cont (liftIO)
 
 -- types
@@ -126,9 +125,3 @@ transposeValue value num =
         Just structure -> case structure of
                             Left track  -> Right $ Left $ transposeT track num
                             Right music -> Right $ Right $ transposeM music num 
-
-validatePath :: FilePath -> Maybe String
-validatePath file
-    | takeExtension file == ".mid" = Nothing
-    | otherwise                    = let Just error = lookup NotMidiFile errorMessages
-                                     in Just $ error file

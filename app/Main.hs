@@ -9,6 +9,8 @@ import Input.State
 import Text.Parsec hiding (parse)
 import System.IO
 
+-- TODO: TASK 1 - put parse in library
+
 main :: IO ()
 main = parse "" emptyState
 

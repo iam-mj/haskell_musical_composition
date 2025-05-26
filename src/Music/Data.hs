@@ -2,6 +2,9 @@ module Music.Data where
 
 -- TODO: consider not exporting the constructors, just the constructor functions
 -- because only through the constructor functions can i check that certain conditions are met
+-- TODO: are there restrictions on octave change? it should be limited in some way
+-- TODO: maybe actually use the functions, give errors if roots are not notes, but rests
+-- TODO: the octave actually might be -1 and seems to only go so far as 8??
 
 type Duration = Double -- where a whole note has a 1.0 duration, half a note has 0.5 ...
 
