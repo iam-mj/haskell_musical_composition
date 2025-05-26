@@ -10,24 +10,33 @@ defTempo = 500000 :: Int -- 120 BPM
 
 -- NOTE: RESEARCH 1 - look more into the PMMsg form
 -- NOTE: RESEARCH 2 - do i actually need milliseconds...?
--- NOTE: RESEARCH 3 - PPQs??s
+-- NOTE: RESEARCH 3 - PPQs??
 
--- TODO: TASK 1 - no magic strings
+data SynError = GetDefaultOutputIdErr | GetDefaultOutputErr | MidiLoadErr
+                deriving Eq
+
+errors :: [(SynError, String)]
+errors = [
+    (GetDefaultOutputIdErr, "Error getting the default output device id"),
+    (GetDefaultOutputErr,   "Error opening the default device"),
+    (MidiLoadErr,           "Error loading MIDI file: ")]
 
 -- note: second parameter of openOutput is latency: 0 => the events are sent immediately
 openDevice :: IO (Either PMError PMStream)
 openDevice = do
+    let Just err = lookup GetDefaultOutputIdErr errors
     maybeDevice <- getDefaultOutputDeviceID
     case maybeDevice of 
-        Nothing       -> putStrLn "Error getting the default output device" >> return (Left InvalidDeviceId)
+        Nothing       -> putStrLn err >> return (Left InvalidDeviceId)
         Just deviceId -> openOutput deviceId 0
 
 loadMidi :: FilePath -> IO (Maybe Midi)
 loadMidi midiFile = do
+    let Just errMessage = lookup MidiLoadErr errors
     result <- importFile midiFile
     case result of
         Left err   -> do
-            putStrLn $ "Error loading MIDI file: " ++ err
+            putStrLn $ errMessage ++ err
             return Nothing
         Right midi -> return $ Just midi
 
@@ -36,8 +45,9 @@ playMidiFile :: FilePath -> IO ()
 playMidiFile midiFile = do
     initialize
     open <- openDevice
+    let Just errMessage = lookup GetDefaultOutputErr errors
     case open of
-        Left err     -> putStrLn "Error opening the default device" >> print err  
+        Left err     -> putStrLn errMessage >> print err  
         Right stream -> do
             result <- loadMidi midiFile
             case result of
@@ -52,8 +62,9 @@ playMidi :: Midi -> IO ()
 playMidi midi = do
     initialize
     open <- openDevice
+    let Just errMessage = lookup GetDefaultOutputErr errors
     case open of
-        Left err     -> putStrLn "Error opening the default device" >> print err
+        Left err     -> putStrLn errMessage >> print err
         Right stream -> do
             sendMidiEvents stream (getPPQ midi) (orderTracks (tracks midi)) 
             _ <- close stream
