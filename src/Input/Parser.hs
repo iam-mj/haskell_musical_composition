@@ -9,10 +9,9 @@ import Music.Data hiding (track)
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
 
+-- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages?
 
--- TODO: TASK 14 - in my grammar example the interval was not an integer, make up your mind
--- TODO: TASK 17 - no note accesory actually implemented!
-
+-- NOTE: accept both mappings and ints for interval values
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -107,7 +106,7 @@ duoLine = do
 oneDuo :: MyParser RepeatDuo
 oneDuo = do
     spaces
-    int         <- int       -- FIXME: TASK 14
+    int         <- mapString stringToInterval <|> int
     (note, rep) <- oneNote
     return (int, note, rep)
 

@@ -9,8 +9,6 @@ import MIDI.Synthesizer
 -- NOTE: RESEARCH 1 - find out more about division
 -- NOTE: RESEARCH 2 - better notes on toDelta
 
--- TODO: TEST 1 - test that when having multiple tracks, one end of track does not affect the others
-
 type MidiEvent       = (Ticks, Message)
 type InstrumentTrack = (Instrument, [MusicEvent]) -- an instrument and the events which correspond to it
 
@@ -38,7 +36,6 @@ toMidi performance =
 -- in order to prevent unwanted clipping
 waitTillEnd = 256 :: Ticks
 
--- FIXME: TEST 1
 -- add the end of track event
 addEnd :: [MidiEvent] -> [MidiEvent]
 addEnd msgList = msgList ++ [(waitTillEnd, TrackEnd)]

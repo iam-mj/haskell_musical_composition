@@ -3,8 +3,6 @@ module MIDI.Performance where
 import Music.Data
 import Music.Utils
 
--- TODO: TASK 2 - clean music when perf -> music, after making the tracks
-
 -- NOTE: the METime is held in relative beats, where 1 beat = 1 whole note
 
 type METime    = Double

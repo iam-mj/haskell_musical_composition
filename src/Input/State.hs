@@ -7,6 +7,9 @@ import Input.Messages
 import Text.Parsec
 import Control.Monad.Cont (liftIO)
 
+-- TODO: TASK 1 - add to state midi values? to not keep remaking them each time you play something? or do i want 
+--                something like a cache? or should i just put it in further work?
+
 -- types
 type Name    = String              -- identifiers for the structures in the parser state
 type PSValue = Either Track Music  -- structure recorded in the parser's state: track / melody (music)

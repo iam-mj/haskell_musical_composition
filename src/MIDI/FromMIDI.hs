@@ -9,6 +9,7 @@ import MIDI.ToMIDI (MidiEvent, division)
 import Data.Maybe (fromJust)
 
 -- TODO: TEST 1 - make sure the first events really are the instrument + tempo sets
+-- TODO: TASK 1 - half notes are shown as quarter notes on the score... why? + eighth as sixteenth
 
 loadMusic :: FilePath -> IO (Maybe Music)
 loadMusic fileName = do

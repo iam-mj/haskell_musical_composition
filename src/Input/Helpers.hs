@@ -135,20 +135,25 @@ showOneHelper name = do
     liftIO $ printValue state name
 
 tryPlayFile :: String -> MyParser ()
-tryPlayFile fileName = validatePathAnd fileName (liftIO $ playMidiFile fileName)
+tryPlayFile fileName = validatePathAnd fileName checkFile
+    where
+        checkFile = checkFileExistsAnd fileName (liftIO $ playMidiFile fileName)
 
 tryPlayValue :: Name -> MyParser ()
 tryPlayValue name = getMusicAnd name (liftIO . playMusic)
 
 validatePathAnd :: String -> MyParser () -> MyParser ()
 validatePathAnd fileName parser = do
+    let validationErr = validateMidiPath fileName
+    case validationErr of
+        Nothing  -> parser
+        Just err -> log err
+
+checkFileExistsAnd :: String -> MyParser () -> MyParser ()
+checkFileExistsAnd fileName parser = do
     fileExists <- liftIO $ checkFileExists fileName
     case fileExists of
-        Nothing -> do
-            let validationErr = validateMidiPath fileName
-            case validationErr of
-                Nothing  -> parser
-                Just err -> log err
+        Nothing  -> parser
         Just err -> log err
 
 saveToFile :: Name -> String -> MyParser ()
@@ -160,8 +165,10 @@ saveToFile name fileName = validatePathAnd fileName saveFile
                 log $ message fileName
 
 loadFromFile :: Name -> String -> MyParser ()
-loadFromFile name fileName = validatePathAnd fileName loadFile 
-    where loadFile = do
+loadFromFile name fileName = validatePathAnd fileName checkFile 
+    where 
+        checkFile = checkFileExistsAnd fileName loadFile
+        loadFile = do
             state  <- getState
             loaded <- liftIO $ loadMusic fileName
             let Just loadFail = lookup MelodyLoadFail logs
@@ -170,8 +177,10 @@ loadFromFile name fileName = validatePathAnd fileName loadFile
                 Just music -> callAddMusic name music state
 
 createScoreFromFile :: String -> MyParser ()
-createScoreFromFile fileName = validatePathAnd fileName launchScore
-    where launchScore = liftIO $ createScore fileName
+createScoreFromFile fileName = validatePathAnd fileName checkFile
+    where 
+        checkFile = checkFileExistsAnd fileName launchScore
+        launchScore = liftIO $ createScore fileName
     
 defFileName name = "resources/temp_" ++ name ++ ".mid"
 
