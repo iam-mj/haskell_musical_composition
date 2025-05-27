@@ -198,9 +198,11 @@ transposeM (music1 ::: music2) num    = transposeM music1 num ::: transposeM mus
 
 -- get the intervals in semitones for a certain chord
 intervals :: Chord -> [Int]
-intervals MajorThird = [0, 4, 7]
-intervals MinorThird = [0, 3, 7]
-intervals (CustomChord interval) = interval
+intervals MajorTriad      = [0, 4, 7]
+intervals MinorTriad      = [0, 3, 7]
+intervals DiminishedTriad = [0, 3, 6]
+intervals AugmentedTriad  = [0, 4, 8] 
+intervals (CustomChord intervals) = intervals
 
 -- interpret a Track as a TrackE in order to be able to play it
 interpret :: Track -> TrackE

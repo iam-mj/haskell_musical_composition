@@ -24,7 +24,7 @@ type Interval = Int -- in semitones
 -- the "intervals" function depends on these constructors
 -- for custom chords: give the list of semitones describing your chord
 -- e.g. MajorThid = [0, 4, 7]
-data Chord = MajorThird | MinorThird | CustomChord [Int]
+data Chord = MajorTriad | MinorTriad | DiminishedTriad | AugmentedTriad | CustomChord [Int]
             deriving Show
 
 -- used for the operations availble to the end user

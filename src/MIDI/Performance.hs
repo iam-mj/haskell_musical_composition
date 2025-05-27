@@ -115,7 +115,7 @@ splitToMusic ((instr, events) : rest) = octSplitToMusic instr events ::: splitTo
           octSplitToMusic instr ((oct, events) : rest) =
             let orderedEvents = orderEvents events
                 track         = eventsToTrack orderedEvents
-                cleanTrack    = cleanET track
+                cleanTrack    = (cleanET . cleanET) track
             in Music cleanTrack oct instr ::: octSplitToMusic instr rest
 
 -- order events after the time they trigger

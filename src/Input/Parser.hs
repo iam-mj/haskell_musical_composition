@@ -8,10 +8,11 @@ import Music.Data hiding (track)
 
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
+import Data.Char (digitToInt)
 
--- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages?
+-- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
--- NOTE: accept both mappings and ints for interval values
+-- NOTE: we accept both mappings and ints for interval values
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -124,9 +125,16 @@ chordLine = do
 oneChord :: MyParser RepeatChord
 oneChord = do
     spaces
-    chord       <- mapString stringToChord
+    chord       <- mapString stringToChord <|> customChord
     (note, rep) <- oneNote
     return (chord, note, rep)
+
+customChord :: MyParser Chord
+customChord = do
+    char 'c'
+    digits <- many digit
+    let semitones = map digitToInt digits
+    return $ CustomChord semitones
 
 ---------------- MELODY ---------------------
 

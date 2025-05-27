@@ -5,8 +5,9 @@ import Text.Parsec.String
 import Text.Parsec
 import Data.Maybe
 
--- TODO: TASK 1 - add more chords -> what about custom?
 -- TODO: TASK 2 - add more instruments -> keep them closer to the original names?
+
+-- NOTE: no default chord name should start with a "c" to not confuse the custom chord parser
 
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("Ab", Af), ("A#", As), ("A", A),
@@ -28,7 +29,7 @@ stringToInterval = [("p1", 0),    ("min2", 1),  ("maj2", 2),  ("min3", 3), ("maj
                     ("min7", 10), ("maj7", 11), ("perf8", 12)]
 
 stringToChord :: [(String, Chord)]
-stringToChord = [("maj3", MajorThird), ("min3", MinorThird)]
+stringToChord = [("maj3", MajorTriad), ("min3", MinorTriad), ("dim3", DiminishedTriad), ("aug3", AugmentedTriad)]
 
 stringToInstrument :: [(String, Instrument)]
 stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano)]
