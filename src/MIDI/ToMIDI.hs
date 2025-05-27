@@ -59,7 +59,7 @@ makeTrack icmap (inst, events) =
 makeMEvents :: Channel -> MusicEvent -> (MidiEvent, MidiEvent)
 makeMEvents ch (MEvent {eTime = t, ePitch = pth, eDur = dur, eVol = v}) = 
     ((toDelta t, NoteOn ch pth (limit v)), (toDelta (t + dur), NoteOff ch pth (limit v)))
-    where toDelta t = round (t * 2.0 * fromIntegral division) -- FIXME: RESEARCH 2
+    where toDelta t = round (t * 4.0 * fromIntegral division) -- FIXME: RESEARCH 2
           limit v   = max 0 (min 127 v)
 
 -- insert a midi event into a list of midi events so that the timestamps are in ascending order

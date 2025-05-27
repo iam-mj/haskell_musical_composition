@@ -5,62 +5,62 @@ import Music.Data (Instrument, Music, Duration)
 import MIDI.Performance
 import MIDI.InstrChannel
 import MIDI.Synthesizer
-import MIDI.ToMIDI (MidiEvent, division)
+import MIDI.ToMIDI (MidiEvent)
 import Data.Maybe (fromJust)
 
--- TODO: TEST 1 - make sure the first events really are the instrument + tempo sets
--- TODO: TASK 1 - half notes are shown as quarter notes on the score... why? + eighth as sixteenth
+type Division = Int
 
 loadMusic :: FilePath -> IO (Maybe Music)
 loadMusic fileName = do
     result <- loadMidi fileName
     case result of
         Nothing   -> return Nothing
-        Just midi -> return (Just $ unperform $ fromMidi midi)
+        Just midi -> do
+            print midi
+            return (Just $ unperform $ fromMidi midi)
 
 -- transform a midi value into a performance
 fromMidi :: Midi -> Performance
-fromMidi midi = concatMap trackToEvents (tracks midi)
+fromMidi midi = concatMap (trackToEvents (timeDiv midi)) (tracks midi)
 
 -- transform a track to its corresponding music events
--- FIXME: TEST 1
-trackToEvents :: [MidiEvent] -> Performance
-trackToEvents (instrEvent : tempoEvent : events) = 
-    let instr = getInstrument instrEvent
-    in fromRelativeTime $ midiToMusicEvent instr events
-
-getInstrument :: MidiEvent -> Instrument
-getInstrument (_, ProgramChange _ pgrNum) = fromJust $ lookup pgrNum reverseGmsmap
+-- note: loaded imports usually have a first track of details, which should return no events
+--       afterwards, the channel tracks have a ProgramChange event and an InstrumentName event
+trackToEvents :: TimeDiv -> [MidiEvent] -> Performance
+trackToEvents (TicksPerBeat division) ((_, ProgramChange _ pgrNum) : tempoOrInstrNameEvent : events) = 
+    let instr = fromJust $ lookup pgrNum reverseGmsmap
+    in fromRelativeTime $ midiToMusicEvent division instr events
+trackToEvents _ _ = []
 
 -- transform midi events into a performance's music events
 -- note: any other midi events apart from note on / note off / trackend are ignored
 -- note: need some placeholder events to maintain duration between all events (removed in fromRelativeTime)
-midiToMusicEvent :: Instrument -> [MidiEvent] -> [MusicEvent]
-midiToMusicEvent instr [(_, TrackEnd)]          = []
-midiToMusicEvent instr ((ticks, NoteOff {}) : rest) = 
-    let time             = ticksToTime ticks
+midiToMusicEvent :: Division -> Instrument -> [MidiEvent] -> [MusicEvent]
+midiToMusicEvent div instr [(_, TrackEnd)]          = []
+midiToMusicEvent div instr ((ticks, NoteOff {}) : rest) = 
+    let time             = ticksToTime div ticks
         placeholderEvent = emptyEvent { eTime = time }
-    in placeholderEvent : midiToMusicEvent instr rest
-midiToMusicEvent instr ((ticks, NoteOn _ ptch _) : rest) =
-    let time       = ticksToTime ticks
-        offTime    = lookAhead ptch rest
+    in placeholderEvent : midiToMusicEvent div instr rest
+midiToMusicEvent div instr ((ticks, NoteOn _ ptch _) : rest) =
+    let time       = ticksToTime div ticks
+        offTime    = lookAhead div ptch rest
         musicEvent = makeEvent time instr ptch offTime
-    in musicEvent : midiToMusicEvent instr rest
-midiToMusicEvent instr ((_, _) : rest)          = midiToMusicEvent instr rest
+    in musicEvent : midiToMusicEvent div instr rest
+midiToMusicEvent div instr ((_, _) : rest)          = midiToMusicEvent div instr rest
 
 -- for a certain noteOn event find after how much time the corresponding noteOff event triggers
 -- note: no [] case it should always find the noteOff event
-lookAhead :: AbsPitch -> [MidiEvent] -> Time
-lookAhead ptch events = lookAheadWithTicks ptch events 0
+lookAhead :: Division -> AbsPitch -> [MidiEvent] -> Time
+lookAhead div ptch events = lookAheadWithTicks ptch events 0
     where lookAheadWithTicks ptch (e@(t, NoteOff _ pitch _) : es) ticks
-            | ptch == pitch = ticksToTime (t + ticks)
+            | ptch == pitch = ticksToTime div (t + ticks)
             | otherwise     = lookAheadWithTicks ptch es (t + ticks)
           lookAheadWithTicks ptch ((t, _) : es) ticks = lookAheadWithTicks ptch es (t + ticks)
 
 -- turn ticks into realtive beats
 -- note: 1 beat = 1 whole note
-ticksToTime :: Ticks -> METime
-ticksToTime ticks = fromIntegral ticks / (2.0 * fromIntegral division)
+ticksToTime :: Division -> Ticks -> METime
+ticksToTime division ticks = fromIntegral ticks / (4.0 * fromIntegral division)
 
 -- make a music event
 makeEvent :: Double -> Instrument -> AbsPitch -> Duration -> MusicEvent

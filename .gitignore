@@ -2,3 +2,4 @@ dist-newstyle/*
 samples/*
 grammar-proposal.txt
 src/Debug.hs
+src/front.html
