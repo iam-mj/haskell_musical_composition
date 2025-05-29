@@ -156,9 +156,9 @@ cleanET (groupsL :::: groupsR) = cleanET groupsL :::: cleanET groupsR
 -- turn a pitch into an int
 pitchToInt :: Pitch -> Int
 pitchToInt pitch = case pitch of
-    C -> 0;    D -> 2;  E -> 4;  F -> 5;  G -> 7;   A -> 9;  B -> 11;
-    Cf -> -1; Df -> 1; Ef -> 3; Ff -> 4; Gf -> 6;  Af -> 8; Bf -> 10;
-    Cs -> 1;  Ds -> 3; Es -> 5; Fs -> 6; Gs -> 8; As -> 10; Bs -> 12
+    C  ->  0;  D -> 2;  E -> 4;  F -> 5;  G -> 7;  A -> 9;   B -> 11;
+    Cf -> -1; Df -> 1; Ef -> 3; Ff -> 4; Gf -> 6; Af -> 8;  Bf -> 10;
+    Cs ->  1; Ds -> 3; Es -> 5; Fs -> 6; Gs -> 8; As -> 10; Bs -> 12
 
 -- turn an int into a pitch class and signal an octave change
 -- note: the octave change will give an octave as low as -1 as per the note names in English
@@ -172,7 +172,7 @@ pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
 transpose :: Int -> Primitive -> Primitive
 transpose n (Rest dur) = Rest dur -- no effect on a rest
 transpose n (Note ptch dur change) = let (newPitch, newChange) = pitch (pitchToInt ptch + n) change
-                                     in Note newPitch dur (newChange + 1)
+                                     in note newPitch dur (newChange + 1)
 
 -- transpose a group with a number of semintones
 transposeG :: Int -> Group -> Group
@@ -207,11 +207,9 @@ intervals (CustomChord intervals) = intervals
 -- interpret a Track as a TrackE in order to be able to play it
 interpret :: Track -> TrackE
 interpret track = interpretT $ cleanT track
-
--- TODO: don't export this one
-interpretT :: Track -> TrackE
-interpretT EmptyT = EmptyET
-interpretT (Prim (Single prim)) = PrimET prim
-interpretT (Prim (Duo int note)) = PrimET note :::: PrimET (transpose int note)
-interpretT (Prim (Chord chord note)) = foldl (\notes int -> notes :::: PrimET (transpose int note)) (PrimET note) (tail $ intervals chord)
-interpretT (track1 :+: track2) = interpretT track1 :++: interpretT track2
+    where
+        interpretT EmptyT                    = EmptyET
+        interpretT (Prim (Single prim))      = PrimET prim
+        interpretT (Prim (Duo int note))     = PrimET note :::: PrimET (transpose int note)
+        interpretT (Prim (Chord chord note)) = foldl (\notes int -> notes :::: PrimET (transpose int note)) (PrimET note) (tail $ intervals chord)
+        interpretT (track1 :+: track2)       = interpretT track1 :++: interpretT track2

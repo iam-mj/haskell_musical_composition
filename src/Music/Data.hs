@@ -1,11 +1,5 @@
 module Music.Data where
 
--- TODO: consider not exporting the constructors, just the constructor functions
--- because only through the constructor functions can i check that certain conditions are met
--- TODO: are there restrictions on octave change? it should be limited in some way
--- TODO: maybe actually use the functions, give errors if roots are not notes, but rests
--- TODO: the octave actually might be -1 and seems to only go so far as 8??
-
 type Duration = Double -- where a whole note has a 1.0 duration, half a note has 0.5 ...
 
 -- the "pitchToInt" function depends on these constructors
@@ -45,7 +39,7 @@ data TrackE = EmptyET            -- nothing
             | TrackE :::: TrackE -- parallel operator
             deriving Eq
 
-type Octave = Int -- < 12
+type Octave = Int -- >= -1 && <= 9
 
 -- adds a key to a track in order to make it playable
 -- as well as a instrument
@@ -53,34 +47,54 @@ data Music = Music TrackE Octave Instrument
             | Music ::: Music
             deriving Eq
 
--- constructor functions
-note :: Pitch -> Duration -> Primitive
-note ptch dur = Note ptch dur 0
+------------- ERRRORS --------------------
+
+type Error = String
+
+data ConstrErr = RestInterval | RestChord | InvalidOctave
+                deriving Eq 
+            
+errorMessages :: [(ConstrErr, Error)]
+errorMessages = [
+    (RestInterval,  "Error: Can't make an interval with a rest root. Use a note instead or build a single."),
+    (RestChord,     "Error: Can't make chords with a rest root. Use a note instead or build a single."),
+    (InvalidOctave, "Error: Input octave is invalid. Make sure octave is an integer between -1 and 9.")]
+
+
+----- CONSTRUCTOR FUNCTIONS --------------
+
+note :: Pitch -> Duration -> OctaveChange -> Primitive
+note ptch dur ch = Note ptch dur (min (-10) . max 10 $ ch)
+noteDef :: Pitch -> Duration -> Primitive
+noteDef ptch dur = Note ptch dur 0
 noteInc :: Pitch -> Duration -> Primitive
 noteInc ptch dur = Note ptch dur 1
 rest :: Duration -> Primitive
 rest = Rest
 
 single :: Primitive -> Group
-single note@(Note _ _ _) = Single note
+single note@(Note {}) = Single note
 single rest@(Rest _) = Single rest
 
-duo :: Interval -> Primitive -> Group
-duo interval note@(Note _ _ _) = Duo interval note
-duo _ _ = error "Can't make an interval with a rest root. Use a note instead or build a single."
+duo :: Interval -> Primitive -> Either Error Group
+duo interval note@(Note {}) = Right $ Duo interval note
+duo _ _ = let Just err = lookup RestInterval errorMessages
+          in Left err
 
-chord :: Chord -> Primitive -> Group
-chord chd note@(Note _ _ _) = Chord chd note
-chord _ _ = error "Can't make chords with a rest root. Use a note instead or build a single."
+chord :: Chord -> Primitive -> Either Error Group
+chord chd note@(Note {}) = Right $ Chord chd note
+chord _ _ = let Just err = lookup RestChord errorMessages
+            in Left err
 
 track :: Group -> Track
 track = Prim
 
-music :: [TrackE] -> Octave -> Instrument -> Music
+music :: [TrackE] -> Octave -> Instrument -> Either Error Music
 music tracks octave instrument
-    | 0 <= octave && octave < 12 = let f music track = music ::: Music track octave instrument
-                                   in foldl f (Music (head tracks) octave instrument) (tail tracks)
-    | otherwise = error "Input octave is invalid. Make sure octave is a natural number and 0 <= octave < 12."
+    | -1 <= octave && octave <= 9 = let f music track = music ::: Music track octave instrument
+                                    in Right $ foldl f (Music (head tracks) octave instrument) (tail tracks)
+    | otherwise                   = let Just err = lookup InvalidOctave errorMessages
+                                    in Left err
 
 
 -- standard durations

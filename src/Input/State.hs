@@ -1,6 +1,6 @@
 module Input.State where
 
-import Music.Data
+import Music.Data hiding (errorMessages, Error)
 import Music.Utils
 import Music.Show
 import Input.Messages

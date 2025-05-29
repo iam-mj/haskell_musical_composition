@@ -30,38 +30,38 @@ parse buffer state = do
 
 
 -- test values
-myGroup = single $ note A 0.5
-myDuo = duo 2 (note C 1)
-myChord = chord MinorTriad (note D 0.5)
-myTrack = track myGroup
+-- myGroup = single $ note A 0.5
+-- myDuo = duo 2 (note C 1)
+-- myChord = chord MinorTriad (note D 0.5)
+-- myTrack = track myGroup
 
-uncleanTrack = linkT [EmptyT, EmptyT, EmptyT, myTrack, EmptyT, EmptyT, myTrack, EmptyT]
-cleanTrack = cleanT uncleanTrack
+-- uncleanTrack = linkT [EmptyT, EmptyT, EmptyT, myTrack, EmptyT, EmptyT, myTrack, EmptyT]
+-- cleanTrack = cleanT uncleanTrack
 
-trackE = interpret $ link [myGroup, myDuo, myChord]
+-- trackE = interpret $ link [myGroup, myDuo, myChord]
 
-m1 = music [trackE] 4 Violin
-m2 = music [trackE, trackE] 4 Violin
-m3 = music [trackE, trackE, trackE] 4 Violin
+-- m1 = music [trackE] 4 Violin
+-- m2 = music [trackE, trackE] 4 Violin
+-- m3 = music [trackE, trackE, trackE] 4 Violin
 
-p1 = perform m1
-p2 = perform m2
+-- p1 = perform m1
+-- p2 = perform m2
 
--- let's try composing Merry-Go-Round of Life
-q1 = repeatT 3 $ link [duo 3 (note B en), duo 4 (noteInc C en)]
-q2 = repeatT 3 $ link [duo 3 (note A en), duo 3 (note B en)]
-q3 = repeatT 3 $ link [duo 4 (note G en), duo 3 (note A en)]
-tr1 = linkT [q1, q2, q3]
+-- -- let's try composing Merry-Go-Round of Life
+-- q1 = repeatT 3 $ link [duo 3 (note B en), duo 4 (noteInc C en)]
+-- q2 = repeatT 3 $ link [duo 3 (note A en), duo 3 (note B en)]
+-- q3 = repeatT 3 $ link [duo 4 (note G en), duo 3 (note A en)]
+-- tr1 = linkT [q1, q2, q3]
 
-mgr = music [interpret tr1] 4 AcousticGrandPiano
+-- mgr = music [interpret tr1] 4 AcousticGrandPiano
 
--- ex1
+-- -- ex1
 
-singleA = single $ note A en
-singleB = single $ note B hn
-singleR = single $ rest en
-duoB    = duo 2 $ note B hn
+-- singleA = single $ note A en
+-- singleB = single $ note B hn
+-- singleR = single $ rest en
+-- duoB    = duo 2 $ note B hn
 
-track1 = interpret $ link [singleA, singleB, singleR, duoB]
+-- track1 = interpret $ link [singleA, singleB, singleR, duoB]
 
-melody = music [track1] 4 Violin ::: music [track1] 5 AcousticGrandPiano
+-- melody = music [track1] 4 Violin ::: music [track1] 5 AcousticGrandPiano

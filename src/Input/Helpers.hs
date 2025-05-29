@@ -7,7 +7,7 @@ import Input.Messages
 import MIDI.Synthesizer (playMidiFile)
 import MIDI.ToMIDI (playMusic, saveMusic)
 import MIDI.FromMIDI (loadMusic)
-import Music.Data
+import Music.Data hiding (errorMessages, Error)
 import Music.Utils
 import Visual.CreateScore
 
@@ -108,8 +108,10 @@ tryAddMusic :: Name -> Name -> Int -> Instrument -> MyParser ()
 tryAddMusic name musicName oct instrument = getTrackAnd name createMusic
     where createMusic track = do
             state <- getState
-            let music = Music (interpret track) oct instrument
-            callAddMusic musicName music state
+            let maybeMusic = music [interpret track] oct instrument
+            case maybeMusic of
+                Left err    -> liftIO $ print err
+                Right music -> callAddMusic musicName music state
             
 callAddMusic :: Name -> Music -> ParsingState -> MyParser ()
 callAddMusic name music state = do
@@ -344,8 +346,8 @@ makePitchWithChange pitch ch = do
 makeRepeatNote :: Pitch -> Duration -> OctaveChange -> Maybe Repeat -> MyParser RepeatNote
 makeRepeatNote pitch dur ch rep = do
     case rep of
-        Nothing     -> return (Note pitch dur ch, 1)
-        Just repeat -> return (Note pitch dur ch, repeat)
+        Nothing     -> return (note pitch dur ch, 1)
+        Just repeat -> return (note pitch dur ch, repeat)
 
 makeIndex :: Index -> MyParser IndexOrError
 makeIndex idx = do
