@@ -16,7 +16,7 @@ instance Show Track where
 showNote (Note ptch dur octCh)
     | octCh == 0 = show ptch ++ " " ++ show dur
     | octCh > 0  = show ptch ++ "(+" ++ show octCh ++ ") " ++ show dur
-    | octCh < 0  = show ptch ++ "(-" ++ show octCh ++ ") " ++ show dur
+    | octCh < 0  = show ptch ++ "("  ++ show octCh ++ ") " ++ show dur
 
 showInd n = " [" ++ show n ++ "]"
 

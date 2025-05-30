@@ -32,4 +32,4 @@ stringToChord :: [(String, Chord)]
 stringToChord = [("maj3", MajorTriad), ("min3", MinorTriad), ("dim3", DiminishedTriad), ("aug3", AugmentedTriad)]
 
 stringToInstrument :: [(String, Instrument)]
-stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano)]
+stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano), ("drums", MelodicDrum)]

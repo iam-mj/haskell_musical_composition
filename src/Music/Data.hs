@@ -64,7 +64,7 @@ errorMessages = [
 ----- CONSTRUCTOR FUNCTIONS --------------
 
 note :: Pitch -> Duration -> OctaveChange -> Primitive
-note ptch dur ch = Note ptch dur (min (-10) . max 10 $ ch)
+note ptch dur ch = Note ptch dur (min 10 . max (-10) $ ch)
 noteDef :: Pitch -> Duration -> Primitive
 noteDef ptch dur = Note ptch dur 0
 noteInc :: Pitch -> Duration -> Primitive
@@ -149,5 +149,5 @@ data Instrument =
   |  MelodicDrum            | SynthDrum              | ReverseCymbal
   |  GuitarFretNoise        | BreathNoise            | Seashore
   |  BirdTweet              | TelephoneRing          | Helicopter
-  |  Applause               | Gunshot                | Percussion
+  |  Applause               | Gunshot
   deriving (Show, Eq)

@@ -260,7 +260,7 @@ modify = do
     return ()
 
 modifyOp :: Name -> [MyParser ()]
-modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans, clean]
+modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
 
 --------------- INSERT ---------------------
 
@@ -326,14 +326,6 @@ trans name = do
     spaces
     num   <- int
     callTranspose name num
-
---------------- CLEAN ---------------------
-
-clean :: Name -> MyParser ()
-clean name = do
-    string "clean"
-    callClean name
-
 
 -------------------------------------------
 --             HELPERS                   -- 
