@@ -354,6 +354,12 @@ makePitchWithChange pitch ch = do
         Nothing -> return (pitch, noChange)
         Just ch -> return (pitch, fromIntegral ch)
 
+makeDuration :: Duration -> Maybe Char -> MyParser Duration
+makeDuration dur dot = do
+    case dot of
+        Nothing -> return dur
+        Just _  -> return $ dur * 1.5
+
 makeRepeatNote :: Pitch -> Duration -> OctaveChange -> Maybe Repeat -> MyParser RepeatNote
 makeRepeatNote pitch dur ch rep = do
     case rep of

@@ -79,7 +79,11 @@ pitchClass :: MyParser Pitch
 pitchClass = mapString stringToPitch
 
 durP :: MyParser Duration
-durP = spaces >> mapString stringToDuration
+durP = do
+    spaces
+    dur <- mapString stringToDuration
+    dot <- optionMaybe $ char '.'
+    makeDuration dur dot
 
 ---------------- REST ---------------------
 
