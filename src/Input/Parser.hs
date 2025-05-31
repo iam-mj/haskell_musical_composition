@@ -8,7 +8,6 @@ import Music.Data hiding (track)
 
 import Text.Parsec hiding (spaces)
 import Prelude hiding (show)
-import Data.Char (digitToInt)
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
@@ -131,10 +130,10 @@ oneChord = do
 
 customChord :: MyParser Chord
 customChord = do
-    char 'c'
+    char '<'
     digits <- many digit
-    let semitones = map digitToInt digits
-    return $ CustomChord semitones
+    char '>'
+    makeCustomChord digits
 
 ---------------- MELODY ---------------------
 

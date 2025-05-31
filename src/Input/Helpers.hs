@@ -18,6 +18,7 @@ import Prelude hiding (log)
 import System.FilePath
 import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory, doesFileExist)
 import GHC.Conc.IO (threadDelay)
+import Data.Char (digitToInt)
 
 
 ------------------------------------------------
@@ -348,6 +349,11 @@ makeRepeatNote pitch dur ch rep = do
     case rep of
         Nothing     -> return (note pitch dur ch, 1)
         Just repeat -> return (note pitch dur ch, repeat)
+
+makeCustomChord :: String -> MyParser Chord
+makeCustomChord digits = do
+    let semitones = map digitToInt digits
+    return $ CustomChord semitones
 
 makeIndex :: Index -> MyParser IndexOrError
 makeIndex idx = do
