@@ -6,24 +6,25 @@ import Music.Show
 import Input.Messages
 import Text.Parsec
 import Control.Monad.Cont (liftIO)
-
--- TODO: TASK 1 - add to state midi values? to not keep remaking them each time you play something? or do i want 
---                something like a cache? or should i just put it in further work?
+import Codec.Midi (Midi)
 
 -- types
 type Name    = String              -- identifiers for the structures in the parser state
 type PSValue = Either Track Music  -- structure recorded in the parser's state: track / melody (music)
 
+-- NOTE: midi names are the same as melodies names
+
 data ParsingState = PState {
     tracks   :: [(Name, Track)], -- variables which were just defined
-    melodies :: [(Name, Music)]  -- variables which were given context & are ready to be played and saved
+    melodies :: [(Name, Music)], -- variables which were given context & are ready to be played and saved
+    midi     :: [(Name, Midi)]   -- variables which have been transformed into midi
 } deriving Show
 
 -- new parser with the custom state
 type MyParser = ParsecT String ParsingState IO
 
 emptyState :: ParsingState
-emptyState = PState [] []
+emptyState = PState [] [] []
 
 -- check that a track / music name is unique in the current state
 checkName :: Name -> ParsingState -> Maybe Error
@@ -55,6 +56,9 @@ addMusic name music state =
     case checkName name state of
         Nothing  -> Right $ state {melodies = (name, music) : melodies state}
         Just err -> Left err
+
+addMidi :: Name -> Midi -> ParsingState -> ParsingState
+addMidi name newMidi state = state {midi = (name, newMidi) : midi state}
 
 getTrack :: ParsingState -> Name -> Either Error Track
 getTrack state name = 

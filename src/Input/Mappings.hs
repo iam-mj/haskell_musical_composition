@@ -7,8 +7,6 @@ import Data.Maybe
 
 -- TODO: TASK 2 - add more instruments -> keep them closer to the original names?
 
--- NOTE: no default chord name should start with a "c" to not confuse the custom chord parser
-
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("Ab", Af), ("A#", As), ("A", A),
                  ("Bb", Bf), ("B#", Bs), ("B", B),

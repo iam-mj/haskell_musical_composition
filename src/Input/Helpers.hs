@@ -4,8 +4,9 @@ module Input.Helpers where
 
 import Input.State
 import Input.Messages
-import MIDI.Synthesizer (playMidiFile)
-import MIDI.ToMIDI (playMusic, saveMusic)
+import MIDI.Performance (perform)
+import MIDI.Synthesizer (playMidiFile, playMidi)
+import MIDI.ToMIDI (playMusic, saveMusic, toMidi)
 import MIDI.FromMIDI (loadMusic)
 import Music.Data hiding (errorMessages, Error)
 import Music.Utils
@@ -143,7 +144,16 @@ tryPlayFile fileName = validatePathAnd fileName checkFile
         checkFile = checkFileExistsAnd fileName (liftIO $ playMidiFile fileName)
 
 tryPlayValue :: Name -> MyParser ()
-tryPlayValue name = getMusicAnd name (liftIO . playMusic)
+tryPlayValue name = do
+    state <- getState
+    let mMidi = lookup name (midi state)
+    case mMidi of
+        Nothing   -> getMusicAnd name midiAddPlay
+        Just midi -> liftIO $ playMidi midi
+    where midiAddPlay music = do
+            let midi = toMidi $ perform music
+            modifyState $ addMidi name midi
+            liftIO $ playMidi midi
 
 validatePathAnd :: String -> MyParser () -> MyParser ()
 validatePathAnd fileName parser = do
