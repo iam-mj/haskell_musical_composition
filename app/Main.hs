@@ -8,6 +8,7 @@ import Input.State
 
 import Text.Parsec hiding (parse)
 import System.IO
+import Data.Either (fromRight)
 
 -- TODO: TASK 1 - put parse in library
 
@@ -30,10 +31,10 @@ parse buffer state = do
 
 
 -- test values
--- myGroup = single $ note A 0.5
--- myDuo = duo 2 (note C 1)
--- myChord = chord MinorTriad (note D 0.5)
--- myTrack = track myGroup
+myGroup = single $ noteDef A 0.5
+myDuo = fromRight $ duo 2 (noteDef C 1)
+myChord = fromRight $ chord MinorTriad (noteDef D 0.5)
+myTrack = track myGroup
 
 -- uncleanTrack = linkT [EmptyT, EmptyT, EmptyT, myTrack, EmptyT, EmptyT, myTrack, EmptyT]
 -- cleanTrack = cleanT uncleanTrack

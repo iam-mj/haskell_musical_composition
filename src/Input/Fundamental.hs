@@ -49,7 +49,7 @@ quotes parser = do
 int :: MyParser Int
 int = do
     minus <- optionMaybe $ char '-'
-    num   <- many digit
+    num   <- many1 digit
     case minus of
         Nothing -> return $ read num
         Just _  -> return $ -(read num)
