@@ -12,19 +12,21 @@ import Codec.Midi (Midi)
 type Name    = String              -- identifiers for the structures in the parser state
 type PSValue = Either Track Music  -- structure recorded in the parser's state: track / melody (music)
 
--- NOTE: midi names are the same as melodies names
+-- note: midi & modified names are the same as melodies names
+-- note: if the music's name has a True in modified, we should remake the midi value
 
 data ParsingState = PState {
     tracks   :: [(Name, Track)], -- variables which were just defined
     melodies :: [(Name, Music)], -- variables which were given context & are ready to be played and saved
-    midi     :: [(Name, Midi)]   -- variables which have been transformed into midi
+    midi     :: [(Name, Midi)],  -- variables which have been transformed into midi
+    modified :: [(Name, Bool)]   -- have the music values changed since we registered the midi?
 } deriving Show
 
 -- new parser with the custom state
 type MyParser = ParsecT String ParsingState IO
 
 emptyState :: ParsingState
-emptyState = PState [] [] []
+emptyState = PState [] [] [] []
 
 -- check that a track / music name is unique in the current state
 checkName :: Name -> ParsingState -> Maybe Error
@@ -60,6 +62,9 @@ addMusic name music state =
 addMidi :: Name -> Midi -> ParsingState -> ParsingState
 addMidi name newMidi state = state {midi = (name, newMidi) : midi state}
 
+addModified :: Name -> ParsingState -> ParsingState
+addModified name state = state {modified = (name, False) : modified state}
+
 getTrack :: ParsingState -> Name -> Either Error Track
 getTrack state name = 
     let Just error = lookup NoTrackName errorMessages
@@ -90,6 +95,14 @@ updateTrack name track state = state {tracks = updateList name track (tracks sta
 -- replace a melody with a new value
 updateMusic :: Name -> Music -> ParsingState -> ParsingState
 updateMusic name music state = state {melodies = updateList name music (melodies state)}
+
+-- replace a midi value 
+updateMidi :: Name -> Midi -> ParsingState -> ParsingState
+updateMidi name mid state = state {midi = updateList name mid (midi state)}
+
+-- change the value of a music in the modified association list
+updateModified :: Name -> Bool -> ParsingState -> ParsingState
+updateModified name value state = state {modified = updateList name value (modified state)}
 
 printValue :: ParsingState -> Name -> IO ()
 printValue state name =

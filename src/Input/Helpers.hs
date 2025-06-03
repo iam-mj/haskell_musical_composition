@@ -6,7 +6,7 @@ import Input.State
 import Input.Messages
 import MIDI.Performance (perform)
 import MIDI.Synthesizer (playMidiFile, playMidi)
-import MIDI.ToMIDI (playMusic, saveMusic, toMidi)
+import MIDI.ToMIDI (playMusic, saveMusic, toMidi, musicToMidi)
 import MIDI.FromMIDI (loadMusic)
 import Music.Data hiding (errorMessages, Error)
 import Music.Utils
@@ -143,18 +143,38 @@ tryPlayFile fileName = validatePathAnd fileName checkFile
     where
         checkFile = checkFileExistsAnd fileName (liftIO $ playMidiFile fileName)
 
+checkModifiedAnd :: Name -> MyParser () -> MyParser () -> MyParser () -> MyParser ()
+checkModifiedAnd name parseIfNot parseIfNotModified parseIfModified = do
+    state <- getState
+    let mModified = lookup name (modified state)
+    case mModified of
+        Nothing       -> modifyState (addModified name) >> parseIfNot
+        Just modified -> do
+            if modified 
+                then parseIfModified
+                else parseIfNotModified
+
 tryPlayValue :: Name -> MyParser ()
 tryPlayValue name = do
     state <- getState
     let mMidi = lookup name (midi state)
     case mMidi of
         Nothing   -> getMusicAnd name midiAddPlay
-        Just midi -> liftIO $ playMidi midi
-    where midiAddPlay music = do
-            let midi = toMidi $ perform music
+        Just midi -> checkModifiedAnd name (noModified midi) (noModified midi) trueModified
+    where 
+        midiAddPlay music = do
+            let midi = musicToMidi music
             modifyState $ addMidi name midi
+            modifyState $ addModified name
             liftIO $ playMidi midi
-
+        noModified   = liftIO . playMidi
+        trueModified = getMusicAnd name update
+        update music = do
+            let newMidi = musicToMidi music
+            modifyState $ updateMidi name newMidi
+            modifyState $ updateModified name False
+            liftIO $ playMidi newMidi
+                    
 validatePathAnd :: String -> MyParser () -> MyParser ()
 validatePathAnd fileName parser = do
     let validationErr = validateMidiPath fileName
@@ -214,6 +234,7 @@ modifyTrack name newTrack message = do
 modifyMusic :: Name -> Music -> (String -> String) -> MyParser ()
 modifyMusic name newMusic message = do
     modifyState $ updateMusic name newMusic
+    modifyState $ updateModified name True
     log $ message name
     liftIO $ print newMusic
 
@@ -281,13 +302,6 @@ callTranspose name num = do
             Right music -> do
                 let Just message = lookup MelodyTransSuccess logs
                 modifyMusic name music message
-
-callClean :: Name -> MyParser ()
-callClean name = getTrackAnd name cleanTr 
-    where cleanTr track = do
-            let newTrack     = cleanT track
-                Just message = lookup TrackModifySuccess logs
-            modifyTrack name newTrack message
 
 
 

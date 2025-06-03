@@ -15,9 +15,7 @@ loadMusic fileName = do
     result <- loadMidi fileName
     case result of
         Nothing   -> return Nothing
-        Just midi -> do
-            print midi
-            return (Just $ unperform $ fromMidi midi)
+        Just midi -> return (Just $ unperform $ fromMidi midi)
 
 -- transform a midi value into a performance
 fromMidi :: Midi -> Performance

@@ -20,6 +20,9 @@ saveMusic music file = exportFile file ((toMidi . perform) music)
 playMusic :: Music -> IO ()
 playMusic = playMidi . toMidi . perform
 
+musicToMidi :: Music -> Midi
+musicToMidi = toMidi . perform
+
 -- turns a performance into a midi value: Midi fileType timeDev tracks
 -- Codec.Midi's fromAbsTime changes the timestamps from absolute to relative toDelta times
 toMidi :: Performance -> Midi
