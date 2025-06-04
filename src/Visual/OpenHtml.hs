@@ -9,8 +9,10 @@ import Control.Concurrent (forkIO)
 import Control.Monad (void)
 import GHC.Conc (threadDelay)
 import Data.List.Split (splitOn)
+import Data.List (stripPrefix)
 import Network.HTTP.Types (urlEncode)
 import qualified Data.ByteString.Char8 as BS
+import Data.Maybe
 
 serverPort :: Int
 serverPort    = 3000
@@ -19,6 +21,8 @@ htmlPath      = "index.html"
 baseURL       = "http://localhost:" ++ show serverPort
 sourceURL     = "?src="
 nameURL       = "&name="
+tempPrefix    = "temp_" 
+tempSuffix    = ".mid" :: String
 
 -- note: scotty port is blocking, so we start the server in a different thread
 startServer :: IO ()
@@ -27,6 +31,14 @@ startServer = do
         middleware $ staticPolicy (addBase staticFolder)
         get "/" $ file $ staticFolder ++ "/" ++ htmlPath
 
+-- note: strip a temp file of both its prefix and suffix
+stripTemp :: String -> String
+stripTemp name = 
+    let strippedName = stripPrefix tempPrefix name
+    in case strippedName of
+        Nothing       -> name
+        Just stripped -> take (length stripped - length tempSuffix) stripped
+
 openHtml :: FilePath -> Bool -> IO ()
 openHtml fileName running = do
     -- upload the file to a file host
@@ -34,12 +46,12 @@ openHtml fileName running = do
   case uploadResult of
     Left error -> putStrLn error
     Right link -> do
-        if not running 
+        if not running
             then startServer >> callHtml link
             else callHtml link
     where callHtml link = do
             threadDelay 1000
-            let name        = last $ splitOn "/" fileName
+            let name        = stripTemp $ last $ splitOn "/" fileName
                 encodedName = BS.unpack $ urlEncode True $ BS.pack name
                 encodedLink = BS.unpack $ urlEncode True $ BS.pack link
                 htmlURL = baseURL ++ "/" ++ htmlPath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
