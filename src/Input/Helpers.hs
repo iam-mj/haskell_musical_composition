@@ -228,7 +228,11 @@ createScoreFromMusic name = getMusicAnd name launchScore
             liftIO $ removeFile fileName
 
 htmlMidiFromFile :: FilePath -> MyParser ()
-htmlMidiFromFile fileName = validateCheckFileAnd fileName (liftIO $ openHtml fileName)
+htmlMidiFromFile fileName = validateCheckFileAnd fileName openVis
+    where openVis = do
+            state <- getState
+            liftIO $ openHtml fileName $ serverRuns state
+            modifyState serverRunning
 
 -- note: do not open visualizer for songs with more than one track
 htmlMidiFromMusic :: Name -> MyParser ()
@@ -239,10 +243,12 @@ htmlMidiFromMusic name = getMusicAnd name openVis
             if fileType midi /= SingleTrack
                 then log $ err name
                 else do
+                    state <- getState
                     let fileName = defFileName name
                     liftIO $ saveMusic music fileName
-                    liftIO $ openHtml fileName
+                    liftIO $ openHtml fileName $ serverRuns state
                     liftIO $ removeFile fileName
+                    modifyState serverRunning
 
 modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do

@@ -16,17 +16,18 @@ type PSValue = Either Track Music  -- structure recorded in the parser's state: 
 -- note: if the music's name has a True in modified, we should remake the midi value
 
 data ParsingState = PState {
-    tracks   :: [(Name, Track)], -- variables which were just defined
-    melodies :: [(Name, Music)], -- variables which were given context & are ready to be played and saved
-    midi     :: [(Name, Midi)],  -- variables which have been transformed into midi
-    modified :: [(Name, Bool)]   -- have the music values changed since we registered the midi?
+    serverRuns :: Bool,            -- whether the local server for html-midi is already running
+    tracks     :: [(Name, Track)], -- variables which were just defined
+    melodies   :: [(Name, Music)], -- variables which were given context & are ready to be played and saved
+    midi       :: [(Name, Midi)],  -- variables which have been transformed into midi
+    modified   :: [(Name, Bool)]   -- have the music values changed since we registered the midi?
 } deriving Show
 
 -- new parser with the custom state
 type MyParser = ParsecT String ParsingState IO
 
 emptyState :: ParsingState
-emptyState = PState [] [] [] []
+emptyState = PState False [] [] [] []
 
 -- check that a track / music name is unique in the current state
 checkName :: Name -> ParsingState -> Maybe Error
@@ -64,6 +65,9 @@ addMidi name newMidi state = state {midi = (name, newMidi) : midi state}
 
 addModified :: Name -> ParsingState -> ParsingState
 addModified name state = state {modified = (name, False) : modified state}
+
+serverRunning :: ParsingState -> ParsingState
+serverRunning state = state {serverRuns = True}
 
 getTrack :: ParsingState -> Name -> Either Error Track
 getTrack state name = 

@@ -27,17 +27,20 @@ startServer = do
         middleware $ staticPolicy (addBase staticFolder)
         get "/" $ file $ staticFolder ++ "/" ++ htmlPath
 
-openHtml :: FilePath -> IO ()
-openHtml fileName = do
+openHtml :: FilePath -> Bool -> IO ()
+openHtml fileName running = do
     -- upload the file to a file host
   uploadResult <- uploadRequest fileName
   case uploadResult of
     Left error -> putStrLn error
     Right link -> do
-        startServer
-        threadDelay 1000
-        let name        = last $ splitOn "/" fileName
-            encodedName = BS.unpack $ urlEncode True $ BS.pack name
-            encodedLink = BS.unpack $ urlEncode True $ BS.pack link
-            htmlURL = baseURL ++ "/" ++ htmlPath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
-        callCommand $ "start \"\" \"" ++ htmlURL ++ "\""
+        if not running 
+            then startServer >> callHtml link
+            else callHtml link
+    where callHtml link = do
+            threadDelay 1000
+            let name        = last $ splitOn "/" fileName
+                encodedName = BS.unpack $ urlEncode True $ BS.pack name
+                encodedLink = BS.unpack $ urlEncode True $ BS.pack link
+                htmlURL = baseURL ++ "/" ++ htmlPath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
+            callCommand $ "start \"\" \"" ++ htmlURL ++ "\""
