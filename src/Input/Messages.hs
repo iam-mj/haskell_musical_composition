@@ -6,18 +6,20 @@ module Input.Messages where
 
 type Error = String
 
-data ErrorKey = NotUniqueName | NoTrackName | NoMelodyName | NoName | NegativeIndex | NotMidiFile | NoFile
+data ErrorKey = NotUniqueName  | NoTrackName | NoMelodyName | NoName | NegativeIndex | NotMidiFile | NoFile
+              | NotSingleTrack
                 deriving Eq
 
 errorMessages :: [(ErrorKey, String -> Error)]
 errorMessages = [
     (NotUniqueName,  \name -> "Error: There is already a record of the name " ++ name ++ ". Please enter a unique name."),
-    (NoTrackName,   ("Error: No tracks found with the name " ++)),
-    (NoMelodyName,  ("Error: No melodies found with the name " ++)),
-    (NoName,        ("Error: No structures found with the name " ++)),
-    (NegativeIndex, ("Error: The index must have a positive value, unlike the provided " ++)),
-    (NotMidiFile,   ("Error: Please provide a file path to a MIDI file - it should have a '.mid' extension, not " ++)),
-    (NoFile,        \name -> "Error: The provided file " ++ name ++ " cannot be found")]
+    (NoTrackName,    ("Error: No tracks found with the name " ++)),
+    (NoMelodyName,   ("Error: No melodies found with the name " ++)),
+    (NoName,         ("Error: No structures found with the name " ++)),
+    (NegativeIndex,  ("Error: The index must have a positive value, unlike the provided " ++)),
+    (NotMidiFile,    ("Error: Please provide a file path to a MIDI file - it should have a '.mid' extension, not " ++)),
+    (NoFile,         \name -> "Error: The provided file " ++ name ++ " cannot be found"),
+    (NotSingleTrack, \name -> "Error: The provided music " ++ name ++ " has more than one instrument. Cannot visualize it.")]
 
 
 ---------------------------------------------

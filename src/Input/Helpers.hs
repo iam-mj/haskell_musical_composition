@@ -20,6 +20,8 @@ import System.FilePath
 import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory, doesFileExist)
 import GHC.Conc.IO (threadDelay)
 import Data.Char (digitToInt)
+import Visual.OpenHtml
+import Codec.Midi (fileType, FileType (..))
 
 
 ------------------------------------------------
@@ -59,6 +61,23 @@ checkFileExists file = do
     fileExists <- doesFileExist file
     if fileExists then return Nothing
     else return $ Just $ err file
+
+validatePathAnd :: FilePath -> MyParser () -> MyParser ()
+validatePathAnd fileName parser = do
+    let validationErr = validateMidiPath fileName
+    case validationErr of
+        Nothing  -> parser
+        Just err -> log err
+
+checkFileExistsAnd :: FilePath -> MyParser () -> MyParser ()
+checkFileExistsAnd fileName parser = do
+    fileExists <- liftIO $ checkFileExists fileName
+    case fileExists of
+        Nothing  -> parser
+        Just err -> log err
+
+validateCheckFileAnd :: FilePath -> MyParser () -> MyParser ()
+validateCheckFileAnd fileName = validatePathAnd fileName . checkFileExistsAnd fileName
 
 -- parse a string from an assciation list and return it's associated value
 mapString :: [(String, a)] -> MyParser a
@@ -174,20 +193,6 @@ tryPlayValue name = do
             modifyState $ updateMidi name newMidi
             modifyState $ updateModified name False
             liftIO $ playMidi newMidi
-                    
-validatePathAnd :: String -> MyParser () -> MyParser ()
-validatePathAnd fileName parser = do
-    let validationErr = validateMidiPath fileName
-    case validationErr of
-        Nothing  -> parser
-        Just err -> log err
-
-checkFileExistsAnd :: String -> MyParser () -> MyParser ()
-checkFileExistsAnd fileName parser = do
-    fileExists <- liftIO $ checkFileExists fileName
-    case fileExists of
-        Nothing  -> parser
-        Just err -> log err
 
 saveToFile :: Name -> String -> MyParser ()
 saveToFile name fileName = validatePathAnd fileName saveFile 
@@ -210,10 +215,7 @@ loadFromFile name fileName = validatePathAnd fileName checkFile
                 Just music -> callAddMusic name music state
 
 createScoreFromFile :: String -> MyParser ()
-createScoreFromFile fileName = validatePathAnd fileName checkFile
-    where 
-        checkFile = checkFileExistsAnd fileName launchScore
-        launchScore = liftIO $ createScore fileName
+createScoreFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)
     
 defFileName name = "resources/temp_" ++ name ++ ".mid"
 
@@ -224,6 +226,23 @@ createScoreFromMusic name = getMusicAnd name launchScore
             liftIO $ saveMusic music fileName
             liftIO $ createScore fileName
             liftIO $ removeFile fileName
+
+htmlMidiFromFile :: FilePath -> MyParser ()
+htmlMidiFromFile fileName = validateCheckFileAnd fileName (liftIO $ openHtml fileName)
+
+-- note: do not open visualizer for songs with more than one track
+htmlMidiFromMusic :: Name -> MyParser ()
+htmlMidiFromMusic name = getMusicAnd name openVis
+    where openVis music = do
+            let midi     = musicToMidi music
+                Just err = lookup NotSingleTrack errorMessages
+            if fileType midi /= SingleTrack
+                then log $ err name
+                else do
+                    let fileName = defFileName name
+                    liftIO $ saveMusic music fileName
+                    liftIO $ openHtml fileName
+                    liftIO $ removeFile fileName
 
 modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do

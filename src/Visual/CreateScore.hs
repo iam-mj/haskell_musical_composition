@@ -20,7 +20,7 @@ createScore fileName = do
         -- note: urlEncode's first argument is set to true => we encode a part of a query string
         let linkBS      = BS.pack link
             encodedLink = BS.unpack $ urlEncode True linkBS 
-            launchLink  = endpoint ++ link ++ setImportType
+            launchLink  = endpoint ++ encodedLink ++ setImportType
         
         -- launch the score editor
         callCommand $ "start \"\" " ++ launchLink

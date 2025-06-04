@@ -15,7 +15,7 @@ import Prelude hiding (show)
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, save, load, play, score, modify]
+    choice $ map try [track, melody, show, save, load, play, score, vis, modify]
     getState
 
 
@@ -249,6 +249,26 @@ scoreMusic = do
     music <- identifier
     eol
     createScoreFromMusic music
+
+---------------- VIS ----------------------
+
+vis :: MyParser ()
+vis = do
+    string "vis"
+    spaces
+    visFile <|> visMusic
+
+visFile :: MyParser ()
+visFile = do
+    file <- fileName
+    eol
+    htmlMidiFromFile file
+
+visMusic :: MyParser ()
+visMusic = do
+    music <- identifier
+    eol
+    htmlMidiFromMusic music
 
 --------------- MODIFY ---------------------
 
