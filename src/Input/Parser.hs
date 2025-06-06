@@ -154,7 +154,7 @@ melody = do
     string "oct"
     oct <- int
     spaces
-    instrument <- mapString stringToInstrument
+    instrument <- mapString stringToInstrument <|> mapString stringToGeneralMidi
     spaces
     char '}'
     eol

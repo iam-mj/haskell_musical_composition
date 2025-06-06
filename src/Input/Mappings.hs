@@ -4,6 +4,7 @@ import Music.Data
 import Text.Parsec.String
 import Text.Parsec
 import Data.Maybe
+import MIDI.InstrChannel (gmsmap)
 
 -- TODO: TASK 2 - add more instruments -> keep them closer to the original names?
 
@@ -30,4 +31,7 @@ stringToChord :: [(String, Chord)]
 stringToChord = [("maj3", MajorTriad), ("min3", MinorTriad), ("dim3", DiminishedTriad), ("aug3", AugmentedTriad)]
 
 stringToInstrument :: [(String, Instrument)]
-stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano), ("drums", MelodicDrum)]
+stringToInstrument = [("violin", Violin), ("piano", AcousticGrandPiano), ("drums", MelodicDrum), ("flute", Flute)]
+
+stringToGeneralMidi :: [(String, Instrument)]
+stringToGeneralMidi = map (\(instrument, _) -> (show instrument, instrument)) gmsmap

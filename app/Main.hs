@@ -17,7 +17,7 @@ main = parse "" emptyState
 
 parse :: String -> ParsingState -> IO ()
 parse buffer state = do
-    putStr "musically> "
+    putStr "prelude> "
     hFlush stdout
     line   <- getLine
     if line /= "" then do
