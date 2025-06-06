@@ -135,7 +135,7 @@ oneChord = do
 customChord :: MyParser Chord
 customChord = do
     char '<'
-    digits <- many digit
+    digits <- commaSep $ spaces >> many digit
     char '>'
     makeCustomChord digits
 

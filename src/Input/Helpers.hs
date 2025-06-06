@@ -405,9 +405,9 @@ makeRepeatNote pitch dur ch rep = do
         Nothing     -> return (note pitch dur ch, 1)
         Just repeat -> return (note pitch dur ch, repeat)
 
-makeCustomChord :: String -> MyParser Chord
+makeCustomChord :: [String] -> MyParser Chord
 makeCustomChord digits = do
-    let semitones = map digitToInt digits
+    let semitones = map read digits
     return $ CustomChord semitones
 
 makeIndex :: Index -> MyParser IndexOrError
