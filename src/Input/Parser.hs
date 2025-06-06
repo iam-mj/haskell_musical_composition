@@ -242,13 +242,13 @@ scoreFile :: MyParser ()
 scoreFile = do
     file <- fileName
     eol
-    createScoreFromFile file
+    htmlMidiFromFile file
 
 scoreMusic :: MyParser ()
 scoreMusic = do
     music <- identifier
     eol
-    createScoreFromMusic music
+    htmlMidiFromMusic music
 
 ---------------- VIS ----------------------
 
@@ -262,13 +262,13 @@ visFile :: MyParser ()
 visFile = do
     file <- fileName
     eol
-    htmlMidiFromFile file
+    visFromFile file
 
 visMusic :: MyParser ()
 visMusic = do
     music <- identifier
     eol
-    htmlMidiFromMusic music
+    visFromMusic music
 
 --------------- MODIFY ---------------------
 

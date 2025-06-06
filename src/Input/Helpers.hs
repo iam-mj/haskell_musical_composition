@@ -214,13 +214,13 @@ loadFromFile name fileName = validatePathAnd fileName checkFile
                 Nothing    -> log $ loadFail fileName
                 Just music -> callAddMusic name music state
 
-createScoreFromFile :: String -> MyParser ()
-createScoreFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)
+visFromFile :: String -> MyParser ()
+visFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)
     
 defFileName name = "resources/temp_" ++ name ++ ".mid"
 
-createScoreFromMusic :: Name -> MyParser ()
-createScoreFromMusic name = getMusicAnd name launchScore
+visFromMusic :: Name -> MyParser ()
+visFromMusic name = getMusicAnd name launchScore
     where launchScore music = do
             let fileName = defFileName name
             liftIO $ saveMusic music fileName
