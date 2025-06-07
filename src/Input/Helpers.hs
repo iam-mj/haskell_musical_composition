@@ -85,6 +85,11 @@ mapString list = do
     key <- choice (map ((try . string) . fst) list)
     return $ fromJust $ lookup key list
 
+noNegative :: Int -> Either Error Int
+noNegative num
+    | num < 0   = Left $ fromJust (lookup NoNegative errorMessages) $ show num
+    | otherwise = Right num
+
 log :: String -> MyParser ()
 log = liftIO . putStrLn
 
@@ -131,7 +136,7 @@ tryAddMusic name musicName oct instrument = getTrackAnd name createMusic
             state <- getState
             let maybeMusic = music [interpret track] oct instrument
             case maybeMusic of
-                Left err    -> liftIO $ print err
+                Left err    -> log err
                 Right music -> callAddMusic musicName music state
             
 callAddMusic :: Name -> Music -> ParsingState -> MyParser ()
@@ -393,11 +398,14 @@ makePitchWithChange pitch ch = do
         Nothing -> return (pitch, noChange)
         Just ch -> return (pitch, fromIntegral ch)
 
+-- note: check for duration increase by dot and unsure it's not negative
 makeDuration :: Duration -> Maybe Char -> MyParser Duration
-makeDuration dur dot = do
-    case dot of
-        Nothing -> return dur
-        Just _  -> return $ dur * 1.5
+makeDuration dur dot = if dur < 0
+                            then checkDot (-dur) dot
+                            else checkDot dur dot
+    where checkDot dur dot = case dot of
+            Nothing -> return dur
+            Just _  -> return $ dur * 1.5
 
 makeRepeatNote :: Pitch -> Duration -> OctaveChange -> Maybe Repeat -> MyParser RepeatNote
 makeRepeatNote pitch dur ch rep = do

@@ -110,7 +110,7 @@ duoLine = do
 oneDuo :: MyParser RepeatDuo
 oneDuo = do
     spaces
-    int         <- mapString stringToInterval <|> int
+    int         <- mapString stringToInterval <|> nat
     (note, rep) <- oneNote
     return (int, note, rep)
 
@@ -335,7 +335,7 @@ parallelize name = do
 seque :: Name -> MyParser ()
 seque name = do
     string "++"
-    num <- optionMaybe int
+    num <- optionMaybe nat
     spaces
     seqName <- identifier
     callSequence name num seqName
@@ -359,7 +359,7 @@ repLine :: MyParser Repeat
 repLine = parens rep
 
 rep :: MyParser Repeat
-rep = char 'x' >> int
+rep = char 'x' >> nat
 
 index :: MyParser IndexOrError
 index = do
@@ -372,10 +372,9 @@ indexes = try (do
     char '-'
     right <- index
     makeIndexes2 left right
-    ) <|> try (do
+    ) <|> do
     idx <- index
     makeIndexes1 idx
-    )
 
 fileName :: MyParser String
 fileName = quotes $ many $ noneOf " \""

@@ -46,6 +46,11 @@ quotes parser = do
     char '\"'
     return content
 
+nat :: MyParser Int
+nat = do
+    num <- many1 digit
+    return $ read num
+
 int :: MyParser Int
 int = do
     minus <- optionMaybe $ char '-'

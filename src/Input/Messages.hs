@@ -7,7 +7,7 @@ module Input.Messages where
 type Error = String
 
 data ErrorKey = NotUniqueName  | NoTrackName | NoMelodyName | NoName | NegativeIndex | NotMidiFile | NoFile
-              | NotSingleTrack
+              | NotSingleTrack | NoNegative
                 deriving Eq
 
 errorMessages :: [(ErrorKey, String -> Error)]
@@ -19,7 +19,8 @@ errorMessages = [
     (NegativeIndex,  ("Error: The index must have a positive value, unlike the provided " ++)),
     (NotMidiFile,    ("Error: Please provide a file path to a MIDI file - it should have a '.mid' extension, not " ++)),
     (NoFile,         \name -> "Error: The provided file " ++ name ++ " cannot be found"),
-    (NotSingleTrack, \name -> "Error: The provided music " ++ name ++ " has more than one instrument. Cannot visualize it.")]
+    (NotSingleTrack, \name -> "Error: The provided music " ++ name ++ " has more than one instrument. Cannot visualize it."),
+    (NoNegative,     ("Error: Expected positive value instead of " ++))]
 
 
 ---------------------------------------------
