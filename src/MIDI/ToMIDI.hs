@@ -69,5 +69,5 @@ makeMEvents ch (MEvent {eTime = t, ePitch = pth, eDur = dur, eVol = v}) =
 insertMEvent :: MidiEvent -> [MidiEvent] -> [MidiEvent]
 insertMEvent e [] = [e]
 insertMEvent e@(t, _) (e1@(t1, _) : es) 
-    | t < t1    = e  : e1 : es 
+    | t <= t1   = e  : e1 : es 
     | otherwise = e1 : insertMEvent e es
