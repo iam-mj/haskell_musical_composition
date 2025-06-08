@@ -283,7 +283,7 @@ modify = do
     return ()
 
 modifyOp :: Name -> [MyParser ()]
-modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans]
+modifyOp name = fmap (\parser -> parser name) [insert, delete, replace, parallelize, seque, trans, flatten]
 
 --------------- INSERT ---------------------
 
@@ -349,6 +349,15 @@ trans name = do
     spaces
     num   <- int
     callTranspose name num
+
+---------------- FLATTEN -------------------
+
+-- for both tracks and music
+flatten :: Name -> MyParser ()
+flatten name = do
+    string "flatten"
+    pitches <- commaSep (spaces >> pitchClass)
+    callFlatten name pitches
 
 -------------------------------------------
 --             HELPERS                   -- 

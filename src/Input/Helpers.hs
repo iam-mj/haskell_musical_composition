@@ -22,6 +22,7 @@ import GHC.Conc.IO (threadDelay)
 import Data.Char (digitToInt)
 import Visual.OpenHtml
 import Codec.Midi (fileType, FileType (..))
+import Sound.PortMidi (DeviceInfo(name))
 
 
 ------------------------------------------------
@@ -318,21 +319,37 @@ callSequence name num seqName = getTrackAnd name getSeqTrack
                 Just message = lookup TrackModifySuccess logs
             modifyTrack name newTrack message
 
-callTranspose :: Name -> Int -> MyParser ()
-callTranspose name num = do
+getValueAnd :: Name -> (PSValue -> MyParser ()) -> MyParser ()
+getValueAnd name parser = do
     state <- getState
-    let value    = getValue state name
-        newValue = transposeValue value num
-    case newValue of
+    let maybeValue = getValue state name
+    case maybeValue of
         Left err        -> log err
-        Right structure -> case structure of
-            Left track  -> do
-                let Just message = lookup TrackTransSuccess logs
-                modifyTrack name track message
-            Right music -> do
-                let Just message = lookup MelodyTransSuccess logs
-                modifyMusic name music message
+        Right structure -> parser structure
 
+callTranspose :: Name -> Int -> MyParser ()
+callTranspose name num = getValueAnd name transValue
+    where transValue structure = do
+            let newValue = transposeValue structure num
+            case newValue of
+                Left track  -> do
+                    let Just message = lookup TrackTransSuccess logs
+                    modifyTrack name track message
+                Right music -> do
+                    let Just message = lookup MelodyTransSuccess logs
+                    modifyMusic name music message
+
+callFlatten :: Name -> [Pitch] -> MyParser ()
+callFlatten name ptchs = getValueAnd name flattenVal
+    where flattenVal structure = do
+            let newValue = flattenValue structure ptchs
+            case newValue of
+                Left track  -> do
+                    let Just message = lookup TrackFlattenSuccess logs
+                    modifyTrack name track message
+                Right music -> do
+                    let Just message = lookup MelodyFlattenSuccess logs
+                    modifyMusic name music message
 
 
 ------------------------------------------------

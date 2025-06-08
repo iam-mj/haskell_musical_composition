@@ -84,13 +84,14 @@ getMusic state name =
             Just music -> Right music
 
 -- find in the state the value of the identifier provided
-getValue :: ParsingState -> Name -> Maybe PSValue
+getValue :: ParsingState -> Name -> Either Error PSValue
 getValue state name = 
-    case lookup name (tracks state) of
-        Nothing     -> case lookup name (melodies state) of
-                            Nothing    -> Nothing
-                            Just music -> Just $ Right music
-        Just track  -> Just $ Left track
+    let Just error = lookup NoName errorMessages
+    in case lookup name (tracks state) of
+            Nothing     -> case lookup name (melodies state) of
+                                Nothing    -> Left $ error name
+                                Just music -> Right $ Right music
+            Just track  -> Right $ Left track
 
 -- replace a track with a new value
 updateTrack :: Name -> Track -> ParsingState -> ParsingState
@@ -110,11 +111,10 @@ updateModified name value state = state {modified = updateList name value (modif
 
 printValue :: ParsingState -> Name -> IO ()
 printValue state name =
-    let value      = getValue state name
-        Just error = lookup NoName errorMessages
+    let value = getValue state name
     in case value of
-        Nothing        -> putStrLn $ error name
-        Just structure -> case structure of
+        Left  err       -> putStrLn err
+        Right structure -> case structure of
                             Left track  -> print track
                             Right music -> print music
 
@@ -141,11 +141,15 @@ printMelodies melodies = putStrLn "Melodies\n" >> foldl accPrint (return ()) mel
             putStrLn ""
 
 -- transpose either a track or a music with a number of semitones
-transposeValue :: Maybe PSValue -> Int -> Either Error PSValue
+transposeValue :: PSValue -> Int -> PSValue
 transposeValue value num = 
-    let Just error = lookup NoName errorMessages
-    in case value of 
-        Nothing        -> Left $ error ""
-        Just structure -> case structure of
-                            Left track  -> Right $ Left $ transposeT track num
-                            Right music -> Right $ Right $ transposeM music num 
+    case value of 
+        Left track  -> Left $ transposeT track num
+        Right music -> Right $ transposeM music num 
+
+-- flatten certain pitches in either a track or a music
+flattenValue :: PSValue -> [Pitch] -> PSValue
+flattenValue value ptchs =
+    case value of 
+        Left track  -> Left $ flattenT track ptchs
+        Right music -> Right $ flattenM music ptchs 

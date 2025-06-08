@@ -124,6 +124,34 @@ updateList name newValue (currentPair@(name', value) : rest)
     | name' == name = (name, newValue) : rest
     | otherwise     = currentPair      : updateList name newValue rest
 
+flattenM :: Music -> [Pitch] -> Music
+flattenM (Music trackE oct inst) ptchs = Music (flattenET trackE ptchs) oct inst
+flattenM (music1 ::: music2) ptchs     = flattenM music1 ptchs ::: flattenM music2 ptchs
+
+flattenET :: TrackE -> [Pitch] -> TrackE
+flattenET = foldl flatten
+    where flatten EmptyET _           = EmptyET
+          flatten (PrimET prim) ptch  = PrimET $ flattenP prim ptch
+          flatten (tr1 :++: tr2) ptch = flatten tr1 ptch :++: flatten tr2 ptch
+          flatten (tr1 :::: tr2) ptch = flatten tr1 ptch :::: flatten tr2 ptch
+
+flattenT :: Track -> [Pitch] -> Track
+flattenT = foldl flatten
+    where flatten EmptyT _           = EmptyT
+          flatten (Prim group) ptch  = Prim $ flattenG group ptch
+          flatten (tr1 :+: tr2) ptch = flatten tr1 ptch :+: flatten tr2 ptch
+
+flattenG :: Group -> Pitch -> Group
+flattenG (Single prim) ptch   = Single $ flattenP prim ptch
+flattenG (Duo int prim) ptch  = Duo int $ flattenP prim ptch
+flattenG (Chord ch prim) ptch = Chord ch $ flattenP prim ptch
+
+flattenP :: Primitive -> Pitch -> Primitive
+flattenP rest@(Rest _) _            = rest
+flattenP note@(Note nptch dur octch) ptch
+    | nptch /= ptch = note
+    | otherwise     = transpose (-1) note
+
 -- parallelize two tracks
 -- parallelizeT :: Track -> Track -> Track
 -- parallelizeT EmptyT track = track
@@ -164,7 +192,7 @@ pitchToInt pitch = case pitch of
 -- note: the octave change will give an octave as low as -1 as per the note names in English
 pitch :: Int -> OctaveChange -> (Pitch, OctaveChange)
 pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
-                     increase = n `div` 12 - 1
+                     increase = n `div` 12
           in (pitches !! (n `mod` 12), change + increase)
 
 -- increase a note's pitch by n semitones
@@ -172,7 +200,7 @@ pitch n change = let pitches = [C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B]
 transpose :: Int -> Primitive -> Primitive
 transpose n (Rest dur) = Rest dur -- no effect on a rest
 transpose n (Note ptch dur change) = let (newPitch, newChange) = pitch (pitchToInt ptch + n) change
-                                     in note newPitch dur (newChange + 1)
+                                     in note newPitch dur newChange
 
 -- transpose a group with a number of semintones
 transposeG :: Int -> Group -> Group

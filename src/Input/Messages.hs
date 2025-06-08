@@ -27,9 +27,9 @@ errorMessages = [
 --             INFO LOGS                   --
 ---------------------------------------------
 
-data LogKey = TrackAddFail   | TrackAddSuccess    | MelodyAddSuccess    | MelodyAddFail     |
-              FileSave       | TrackModifySuccess | MelodyModifySuccess | TrackTransSuccess |
-              MelodyLoadFail | MelodyTransSuccess
+data LogKey = TrackAddFail   | TrackAddSuccess    | MelodyAddSuccess    | MelodyAddFail        |
+              FileSave       | TrackModifySuccess | MelodyModifySuccess | TrackTransSuccess    |
+              MelodyLoadFail | MelodyTransSuccess | TrackFlattenSuccess | MelodyFlattenSuccess
               deriving Eq
 
 logs :: [(LogKey, String -> String)]
@@ -42,4 +42,6 @@ logs = [(TrackAddFail,        ("Failed to add track " ++)),
         (MelodyModifySuccess, \name -> "Melody " ++ name ++ " modified succesfully"),
         (TrackTransSuccess,   \name -> "Track " ++ name ++ " was transposed succesfully"),
         (MelodyTransSuccess,  \name -> "Melody " ++ name ++ " was transposed succesfully"),
-        (MelodyLoadFail,      ("Failed to load melody from file " ++))]
+        (MelodyLoadFail,      ("Failed to load melody from file " ++)),
+        (TrackFlattenSuccess, \name -> "Track " ++ name ++ " was flattened successfully"),
+        (MelodyFlattenSuccess, \name -> "Melody " ++ name ++ " was flattened successfully")]
