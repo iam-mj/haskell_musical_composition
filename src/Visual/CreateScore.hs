@@ -1,13 +1,14 @@
 module Visual.CreateScore where
     
 import System.Process
+import System.Info
 import qualified Data.ByteString.Char8 as BS
 
 import Visual.UploadFile
 import Network.HTTP.Types
 
-endpoint      = "\"https://www.noteflight.com/scores/create?scoreTemplateURL=" :: String
-setImportType = "&scoreImportType=midi\""                                      :: String
+endpoint      = "https://www.noteflight.com/scores/create?scoreTemplateURL=" :: String
+setImportType = "&scoreImportType=midi"                                      :: String
 
 createScore :: FilePath -> IO ()
 createScore fileName = do
@@ -21,6 +22,12 @@ createScore fileName = do
         let linkBS      = BS.pack link
             encodedLink = BS.unpack $ urlEncode True linkBS 
             launchLink  = endpoint ++ encodedLink ++ setImportType
-        
-        -- launch the score editor
-        callCommand $ "start \"\" " ++ launchLink
+        -- open the link in the default browser
+        launch launchLink
+
+-- launch an url depending on the os
+launch :: String -> IO ()
+launch launchLink = case os of
+    "mingw32" -> callCommand $ "start \"\" \"" ++ launchLink ++ "\"" -- windows
+    "darwin"  -> callCommand $ "open \"" ++ launchLink ++ "\""       -- macOS
+    _         -> callCommand $ "xdg-open \"" ++ launchLink ++ "\""   -- linux

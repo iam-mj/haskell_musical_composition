@@ -13,6 +13,7 @@ import Data.List (stripPrefix)
 import Network.HTTP.Types (urlEncode)
 import qualified Data.ByteString.Char8 as BS
 import Data.Maybe
+import Visual.CreateScore (launch)
 
 serverPort :: Int
 serverPort    = 3000
@@ -55,4 +56,4 @@ openHtml fileName running = do
                 encodedName = BS.unpack $ urlEncode True $ BS.pack name
                 encodedLink = BS.unpack $ urlEncode True $ BS.pack link
                 htmlURL = baseURL ++ "/" ++ htmlPath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
-            callCommand $ "start \"\" \"" ++ htmlURL ++ "\""
+            launch htmlURL
