@@ -1,4 +1,4 @@
-module Input.Parser where
+module Input.Parser(runParser) where
 
 import Input.Fundamental
 import Input.Mappings
@@ -6,12 +6,30 @@ import Input.State
 import Input.Helpers
 import Music.Data hiding (track)
 
-import Text.Parsec hiding (spaces)
+import Text.Parsec hiding (spaces, parse, runParser)
 import Prelude hiding (show)
+import System.IO
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
 -- NOTE: we accept both mappings and ints for interval values
+
+runParser :: IO ()
+runParser = parse "" emptyState
+
+parse :: String -> ParsingState -> IO ()
+parse buffer state = do
+    putStr "prelude> "
+    hFlush stdout
+    line   <- getLine
+    if line /= "" then do
+        let newBuffer = buffer ++ line ++ "\n"
+        parse newBuffer state
+    else do
+        result <- runParserT mainParser state "<stdin>" buffer
+        case result of
+            Left err       -> print err >> parse "" state
+            Right newState -> parse "" newState
 
 mainParser :: MyParser ParsingState
 mainParser = do

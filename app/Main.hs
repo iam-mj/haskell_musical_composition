@@ -3,32 +3,15 @@ module Main where
 import Music.Data
 import Music.Utils
 import MIDI.Performance
-import Input.Parser (mainParser)
+import Input.Parser
 import Input.State
 
-import Text.Parsec hiding (parse)
+import Text.Parsec hiding (parse, runParser)
 import System.IO
 import Data.Either (fromRight)
 
--- TODO: TASK 1 - put parse in library
-
 main :: IO ()
-main = parse "" emptyState
-
-parse :: String -> ParsingState -> IO ()
-parse buffer state = do
-    putStr "prelude> "
-    hFlush stdout
-    line   <- getLine
-    if line /= "" then do
-        let newBuffer = buffer ++ line ++ "\n"
-        parse newBuffer state
-    else do
-        result <- runParserT mainParser state "<stdin>" buffer
-        case result of
-            Left err       -> print err >> parse "" state
-            Right newState -> parse "" newState
-
+main = runParser
 
 -- test values
 myGroup = single $ noteDef A 0.5
