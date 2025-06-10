@@ -48,6 +48,7 @@ type PitchWithChange = (Pitch, OctaveChange)
 --                  UTILS                     --
 ------------------------------------------------
 
+defFileName name = "src/resources/temp_" ++ name ++ ".mid"
 
 -- check that a path is leads to a midi file
 validateMidiPath :: FilePath -> Maybe String
@@ -92,6 +93,9 @@ noNegative :: Int -> Either Error Int
 noNegative num
     | num < 0   = Left $ fromJust (lookup NoNegative errorMessages) $ show num
     | otherwise = Right num
+    
+showErr :: ParseError -> String
+showErr = show
 
 log :: String -> MyParser ()
 log = liftIO . putStrLn
@@ -236,9 +240,6 @@ getFileLines file = do
             let lines = splitOn "\n" contents
             return lines
 
-showErr :: ParseError -> String
-showErr = show
-
 manageReadResult :: FilePath -> Either Error (ParsingState, String) -> MyParser ()
 manageReadResult file result = do
     let Just noReadLog = lookup ReadRollBack logs
@@ -248,8 +249,6 @@ manageReadResult file result = do
 
 visFromFile :: String -> MyParser ()
 visFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)
-    
-defFileName name = "resources/temp_" ++ name ++ ".mid"
 
 visFromMusic :: Name -> MyParser ()
 visFromMusic name = getMusicAnd name launchScore
