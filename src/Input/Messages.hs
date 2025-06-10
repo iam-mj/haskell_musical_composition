@@ -29,19 +29,21 @@ errorMessages = [
 
 data LogKey = TrackAddFail   | TrackAddSuccess    | MelodyAddSuccess    | MelodyAddFail        |
               FileSave       | TrackModifySuccess | MelodyModifySuccess | TrackTransSuccess    |
-              MelodyLoadFail | MelodyTransSuccess | TrackFlattenSuccess | MelodyFlattenSuccess
+              MelodyLoadFail | MelodyTransSuccess | TrackFlattenSuccess | MelodyFlattenSuccess |
+              ReadRollBack   
               deriving Eq
 
 logs :: [(LogKey, String -> String)]
-logs = [(TrackAddFail,        ("Failed to add track " ++)),
-        (TrackAddSuccess,     \name -> "Track " ++ name ++ " added succesfully"),
-        (MelodyAddFail,       ("Failed to add melody " ++)),
-        (MelodyAddSuccess,    \name -> "Melody " ++ name ++ " added succesfully"),
-        (FileSave,            \name -> "File " ++ name ++ " saved succesfully"),
-        (TrackModifySuccess,  \name -> "Track " ++ name ++ " modified succesfully"),
-        (MelodyModifySuccess, \name -> "Melody " ++ name ++ " modified succesfully"),
-        (TrackTransSuccess,   \name -> "Track " ++ name ++ " was transposed succesfully"),
-        (MelodyTransSuccess,  \name -> "Melody " ++ name ++ " was transposed succesfully"),
-        (MelodyLoadFail,      ("Failed to load melody from file " ++)),
-        (TrackFlattenSuccess, \name -> "Track " ++ name ++ " was flattened successfully"),
-        (MelodyFlattenSuccess, \name -> "Melody " ++ name ++ " was flattened successfully")]
+logs = [(TrackAddFail,         ("Failed to add track " ++)),
+        (TrackAddSuccess,      \name -> "Track " ++ name ++ " added succesfully"),
+        (MelodyAddFail,        ("Failed to add melody " ++)),
+        (MelodyAddSuccess,     \name -> "Melody " ++ name ++ " added succesfully"),
+        (FileSave,             \name -> "File " ++ name ++ " saved succesfully"),
+        (TrackModifySuccess,   \name -> "Track " ++ name ++ " modified succesfully"),
+        (MelodyModifySuccess,  \name -> "Melody " ++ name ++ " modified succesfully"),
+        (TrackTransSuccess,    \name -> "Track " ++ name ++ " was transposed succesfully"),
+        (MelodyTransSuccess,   \name -> "Melody " ++ name ++ " was transposed succesfully"),
+        (MelodyLoadFail,       ("Failed to load melody from file " ++)),
+        (TrackFlattenSuccess,  \name -> "Track " ++ name ++ " was flattened successfully"),
+        (MelodyFlattenSuccess, \name -> "Melody " ++ name ++ " was flattened successfully"),
+        (ReadRollBack,         \name -> "Reading of file " ++ name ++ " was unsuccessful. All file operations were ROLLED BACK")]

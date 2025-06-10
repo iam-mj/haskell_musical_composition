@@ -11,6 +11,7 @@ import MIDI.FromMIDI (loadMusic)
 import Music.Data hiding (errorMessages, Error)
 import Music.Utils
 import Visual.CreateScore
+import Visual.OpenHtml
 
 import Text.Parsec
 import Control.Monad.IO.Class (liftIO)
@@ -20,10 +21,10 @@ import System.FilePath
 import System.Directory (removeFile, makeRelativeToCurrentDirectory, createDirectory, removeDirectory, doesFileExist)
 import GHC.Conc.IO (threadDelay)
 import Data.Char (digitToInt)
-import Visual.OpenHtml
 import Codec.Midi (fileType, FileType (..))
 import Sound.PortMidi (DeviceInfo(name))
-
+import System.IO
+import Data.List.Split (splitOn)
 
 ------------------------------------------------
 --                  TYPES                     --
@@ -60,8 +61,9 @@ checkFileExists :: FilePath -> IO (Maybe String)
 checkFileExists file = do
     let Just err = lookup NoFile errorMessages
     fileExists <- doesFileExist file
-    if fileExists then return Nothing
-    else return $ Just $ err file
+    if fileExists 
+        then return Nothing
+        else return $ Just $ err file
 
 validatePathAnd :: FilePath -> MyParser () -> MyParser ()
 validatePathAnd fileName parser = do
@@ -219,6 +221,30 @@ loadFromFile name fileName = validatePathAnd fileName checkFile
             case loaded of
                 Nothing    -> log $ loadFail fileName
                 Just music -> callAddMusic name music state
+
+getFileLines :: FilePath -> MyParser [String]
+getFileLines file = do
+    fileExists <- liftIO $ checkFileExists file
+    case fileExists of
+        Just err -> do
+            log err
+            return []
+        Nothing -> do 
+            state    <- getState
+            handle   <- liftIO $ openFile file ReadMode
+            contents <- liftIO $ hGetContents handle
+            let lines = splitOn "\n" contents
+            return lines
+
+showErr :: ParseError -> String
+showErr = show
+
+manageReadResult :: FilePath -> Either Error (ParsingState, String) -> MyParser ()
+manageReadResult file result = do
+    let Just noReadLog = lookup ReadRollBack logs
+    case result of
+        Left err         -> log $ err ++ "\n" ++ noReadLog file
+        Right (state, _) -> putState state
 
 visFromFile :: String -> MyParser ()
 visFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)

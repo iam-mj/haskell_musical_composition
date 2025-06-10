@@ -4,11 +4,13 @@ import Input.Fundamental
 import Input.Mappings
 import Input.State
 import Input.Helpers
-import Music.Data hiding (track)
+import Music.Data
+    ( Track, Group, Pitch, Duration, Chord, OctaveChange )
 
 import Text.Parsec hiding (spaces, parse, runParser)
-import Prelude hiding (show)
+import Prelude hiding (show, read)
 import System.IO
+import Control.Monad.Cont (liftIO)
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
@@ -33,7 +35,7 @@ parse buffer state = do
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, save, load, play, score, vis, modify]
+    choice $ map try [track, melody, show, play, save, load, read, score, vis, modify]
     getState
 
 
@@ -247,6 +249,39 @@ load = do
     name <- identifier
     eol
     loadFromFile name file
+
+---------------- READ ----------------------
+
+read :: MyParser ()
+read = do
+    string "read"
+    spaces
+    file <- fileName
+    eol
+    parseFile file
+    
+parseFile :: FilePath -> MyParser ()
+parseFile file = do
+    state  <- getState
+    lines  <- getFileLines file
+    let initialArgs = liftIO $ return $ Right (state, "")
+    readResult <- liftIO $ foldl parseLines initialArgs lines
+    manageReadResult file readResult
+
+parseLines :: IO (Either String (ParsingState, String)) -> String -> IO (Either String (ParsingState, String))
+parseLines args line = do
+    lastResult <- args
+    case lastResult of
+        Left err              -> return $ Left err
+        Right (state, buffer) -> do
+            if line /= "" then do 
+                let newBuffer = buffer ++ line ++ "\n"
+                return $ Right (state, newBuffer)
+            else do
+                result <- runParserT mainParser state "" buffer
+                case result of
+                    Left error     -> return $ Left $ showErr error
+                    Right newState -> return $ Right (newState, "")
 
 --------------- SCORE ----------------------
 

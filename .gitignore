@@ -1,5 +1,6 @@
 dist-newstyle/*
 samples/*
+sources/*
 grammar-proposal.txt
 src/Debug.hs
 src/front.html
