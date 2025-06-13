@@ -206,6 +206,15 @@ tryPlayValue name = do
             modifyState $ updateModified name False
             liftIO $ playMidi newMidi
 
+tryPlayTrack :: Name -> Int -> Instrument -> MyParser ()
+tryPlayTrack name oct instrument = getTrackAnd name playTrack
+    where playTrack track = do
+            state <- getState
+            let maybeMusic = music [interpret track] oct instrument
+            case maybeMusic of
+                Left err    -> log err
+                Right music -> liftIO $ playMusic music
+
 saveToFile :: Name -> String -> MyParser ()
 saveToFile name fileName = validatePathAnd fileName saveFile 
     where saveFile       = getMusicAnd name makeSave

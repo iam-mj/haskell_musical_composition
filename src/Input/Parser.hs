@@ -5,7 +5,7 @@ import Input.Mappings
 import Input.State
 import Input.Helpers
 import Music.Data
-    ( Track, Group, Pitch, Duration, Chord, OctaveChange )
+    ( Track, Group, Pitch, Duration, Chord, OctaveChange, Instrument )
 
 import Text.Parsec hiding (spaces, parse, runParser)
 import Prelude hiding (show, read)
@@ -167,6 +167,12 @@ melody = do
     spaces
     melodyName <- identifier
     spaces
+    (name, oct, instrument) <- context
+    eol
+    tryAddMusic name melodyName oct instrument
+
+context :: MyParser (Name, Int, Instrument)
+context = do
     char '{'
     spaces
     name <- identifier
@@ -177,8 +183,7 @@ melody = do
     instrument <- mapString stringToInstrument <|> mapString stringToGeneralMidi
     spaces
     char '}'
-    eol
-    tryAddMusic name melodyName oct instrument
+    return (name, oct, instrument)
 
 
 -------------------------------------------
@@ -212,7 +217,7 @@ play :: MyParser ()
 play = do
     string "play"
     spaces
-    playFile <|> playValue
+    playTrack <|> playFile <|> playValue
 
 playFile :: MyParser ()
 playFile = do
@@ -225,6 +230,12 @@ playValue = do
     name  <- identifier
     eol
     tryPlayValue name
+
+playTrack :: MyParser ()
+playTrack = do
+    (name, oct, instrument) <- context
+    eol
+    tryPlayTrack name oct instrument
 
 ---------------- SAVE ---------------------
 
