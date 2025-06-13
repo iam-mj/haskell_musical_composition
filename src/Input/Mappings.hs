@@ -6,8 +6,6 @@ import Text.Parsec
 import Data.Maybe
 import MIDI.InstrChannel (gmsmap)
 
--- TODO: TASK 2 - add more instruments -> keep them closer to the original names?
-
 stringToPitch :: [(String, Pitch)]
 stringToPitch = [("Ab", Af), ("A#", As), ("A", A),
                  ("Bb", Bf), ("B#", Bs), ("B", B),
