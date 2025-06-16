@@ -12,6 +12,7 @@ import Music.Data hiding (errorMessages, Error)
 import Music.Utils
 import Visual.CreateScore
 import Visual.OpenHtml
+import Visual.ToJSON
 
 import Text.Parsec
 import Control.Monad.IO.Class (liftIO)
@@ -25,6 +26,9 @@ import Codec.Midi (fileType, FileType (..))
 import Sound.PortMidi (DeviceInfo(name))
 import System.IO
 import Data.List.Split (splitOn)
+import qualified Data.ByteString.Lazy as BS
+import Data.Aeson
+import Data.Aeson.Encode.Pretty (encodePretty)
 
 ------------------------------------------------
 --                  TYPES                     --
@@ -49,6 +53,7 @@ type PitchWithChange = (Pitch, OctaveChange)
 ------------------------------------------------
 
 defFileName name = "src/resources/temp_" ++ name ++ ".mid"
+defJson          = "src/resources/static/notes.json"
 
 -- check that a path is leads to a midi file
 validateMidiPath :: FilePath -> Maybe String
@@ -266,6 +271,26 @@ visFromMusic name = getMusicAnd name launchScore
             liftIO $ saveMusic music fileName
             liftIO $ createScore fileName
             liftIO $ removeFile fileName
+
+openVisual :: Name -> Octave -> Instrument -> MyParser ()
+openVisual name oct instr = getTrackAnd name openVis
+    where openVis track = do
+            let mMusic = music [interpret track] oct instr
+            case mMusic of
+                Left err    -> log err
+                Right music -> do
+                    state <- getState
+                     -- save temp file for html 
+                    let fileName = defFileName name
+                    liftIO $ saveMusic music fileName
+                     -- save json of track
+                    let json     = toJSON track
+                    liftIO $ BS.writeFile defJson (encodePretty json)
+                     -- open the html
+                    liftIO $ openHtml fileName (serverRuns state) False
+                    modifyState serverRunning
+                     -- delete all the temp files
+                    liftIO $ removeFile fileName
 
 htmlMidiFromFile :: FilePath -> MyParser ()
 htmlMidiFromFile fileName = validateCheckFileAnd fileName openVis

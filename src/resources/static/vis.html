@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title> MIDI Visualization </title>
-    <link rel="stylesheet" href="visStyles.css">
+    <link rel="stylesheet" href="stylesVis.css">
 </head>
 <body>
 
@@ -12,17 +12,16 @@
 
         <div id = "heading">
             <h1 id = "prelude"> Prelude Visualization </h1> 
-            <h3 id = "title"> File: </h3>
+            <h3 id = "title"> Track: </h3>
         </div>
 
         <div id = "visual">
             <div id = "canvas"></div>
-            <midi-player id = "player" sound-font visualizer = "#visualizer"></midi-player>
+            <midi-player id = "player" sound-font></midi-player>
         </div>
         
     </div>
 
-<!-- p5.js library -->
 <script src = "https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
 <script src = "https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
 <script src = "/circles.js"></script>

@@ -35,7 +35,7 @@ parse buffer state = do
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, play, save, load, read, score, vis, modify]
+    choice $ map try [track, melody, show, play, save, load, read, score, vis, visual, modify]
     getState
 
 
@@ -333,6 +333,16 @@ visMusic = do
     music <- identifier
     eol
     visFromMusic music
+
+--------------- VISUAL ---------------------
+
+visual :: MyParser ()
+visual = do
+    string "visual"
+    spaces
+    (name, oct, instr) <- context
+    eol
+    openVisual name oct instr
 
 --------------- MODIFY ---------------------
 

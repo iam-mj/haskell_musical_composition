@@ -5,20 +5,31 @@ let maxPitch = 0;
 let minColor;
 let maxColor;
 
-const bpm       = 120;
+// my song's bpm = 120 where 1 beat is 1 qn, but in my representation 1 beat is 1 wn
+const bpm       = 120 / 4;
 let currentBeat = 0;
 let start;
+
 let screenH;
 let screenW;
+const border     = 100;
 const noteRadius = 10;
-
-// TODO: start visualizer when starting the player
+let drawing      = false;
 
 function preload() {
   loadJSON('notes.json', handleGroups);
   const parent = document.getElementById('canvas');
   screenH = 0.95 * parent.offsetHeight;
   screenW = 0.95 * parent.offsetWidth;
+
+  const player = document.getElementById("player");
+  player.addEventListener("start", () => {
+    start = millis();
+    drawing = true;
+  });
+  player.addEventListener("stop", () => {
+    drawing = false;
+ });
 }
 
 function absPitch(pitch, octCh) {
@@ -58,7 +69,7 @@ function handleGroups(data) {
 }
 
 function computeHeight(pitch) {
-  return (maxPitch - pitch) / (maxPitch - minPitch) * (screenH - 100) + 50;
+  return (maxPitch - pitch) / (maxPitch - minPitch) * (screenH - 2 * border) + border;
 }
 
 function computeColor(height) {
@@ -76,14 +87,14 @@ function setup() {
   maxColor = color(50, 55, 100);
   
   // frameCount + frameRate for controlling duration + fading out
-  
+
   // TODO: make sure they don't go off the screen
   for(let event of groups)
   {
     // won't draw a rest
-    if(event.pitch > 0)
+    if(event.pitch != null)
     {
-      let eX = random(50, screenW - 50);
+      let eX = random(border, screenW - border);
       let eY = computeHeight(event.pitch);
       let eColor = computeColor(eY);
 
@@ -137,14 +148,16 @@ class Circle {
 }
 
 function draw() {
-  background(255);
+    if(drawing) {
+        background(255);
   
-  // currentBeat knowing how long it passed since the beginning
-  currentBeat = ((millis() - start) / 1000) * (bpm / 60);
-  
-  for(let c of circles)
-  {
-    c.update(currentBeat);
-    c.show();
-  }
+        // currentBeat knowing how long it passed since the beginning
+        currentBeat = ((millis() - start) / 1000) * (bpm / 60);
+        
+        for(let c of circles)
+        {
+            c.update(currentBeat);
+            c.show();
+        }
+    }
 }
