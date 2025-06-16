@@ -35,7 +35,7 @@ parse buffer state = do
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, play, save, load, read, score, vis, visual, modify]
+    choice $ map try [track, melody, show, play, save, load, read, score, vis, see, modify]
     getState
 
 
@@ -334,15 +334,15 @@ visMusic = do
     eol
     visFromMusic music
 
---------------- VISUAL ---------------------
+----------------- SEE ---------------------
 
-visual :: MyParser ()
-visual = do
-    string "visual"
+see :: MyParser ()
+see = do
+    string "see"
     spaces
     (name, oct, instr) <- context
     eol
-    openVisual name oct instr
+    seeVis name oct instr
 
 --------------- MODIFY ---------------------
 

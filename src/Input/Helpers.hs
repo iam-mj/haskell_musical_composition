@@ -272,8 +272,8 @@ visFromMusic name = getMusicAnd name launchScore
             liftIO $ createScore fileName
             liftIO $ removeFile fileName
 
-openVisual :: Name -> Octave -> Instrument -> MyParser ()
-openVisual name oct instr = getTrackAnd name openVis
+seeVis :: Name -> Octave -> Instrument -> MyParser ()
+seeVis name oct instr = getTrackAnd name openVis
     where openVis track = do
             let mMusic = music [interpret track] oct instr
             case mMusic of
@@ -286,10 +286,10 @@ openVisual name oct instr = getTrackAnd name openVis
                      -- save json of track
                     let json     = toJSON track
                     liftIO $ BS.writeFile defJson (encodePretty json)
-                     -- open the html
+                     -- open the vis html
                     liftIO $ openHtml fileName (serverRuns state) False
                     modifyState serverRunning
-                     -- delete all the temp files
+                     -- delete the temp file
                     liftIO $ removeFile fileName
 
 htmlMidiFromFile :: FilePath -> MyParser ()
