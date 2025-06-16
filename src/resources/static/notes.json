@@ -1,0 +1,40 @@
+{
+  "groups" : [
+    {
+      "type" : "note",
+      "root": {
+        "duration" : 0.5,
+        "pitch" : 3,
+        "octaveChange" : 0
+      },
+      "semitones" : null
+    },
+    {
+      "type" : "rest",
+      "root": {
+        "duration" : 0.5,
+        "pitch" : null,
+        "octaveChange" : null
+      },
+      "semitones" : null
+    },
+    {
+      "type" : "duo",
+      "root": {
+        "duration" : 0.5,
+        "pitch" : 9,
+        "octaveChange" : 1
+      },
+      "semitones" : [3]
+    },
+    {
+      "type" : "chord",
+      "root": {
+        "duration" : 0.5,
+        "pitch" : 11,
+        "octaveChange" : 0
+      },
+      "semitones" : [7, 4]
+    }
+  ]
+}

@@ -18,7 +18,8 @@ import Visual.CreateScore (launch)
 serverPort :: Int
 serverPort    = 3000
 staticFolder  = "src/resources/static"
-htmlPath      = "index.html"
+scorePath      = "index.html"
+visPath        = "vis.html"
 baseURL       = "http://localhost:" ++ show serverPort
 sourceURL     = "?src="
 nameURL       = "&name="
@@ -30,7 +31,7 @@ startServer :: IO ()
 startServer = do
     void $ forkIO $ scotty serverPort $ do
         middleware $ staticPolicy (addBase staticFolder)
-        get "/" $ file $ staticFolder ++ "/" ++ htmlPath
+        get "/" $ file $ staticFolder ++ "/" ++ scorePath
 
 -- note: strip a temp file of both its prefix and suffix
 stripTemp :: String -> String
@@ -40,8 +41,9 @@ stripTemp name =
         Nothing       -> name
         Just stripped -> take (length stripped - length tempSuffix) stripped
 
-openHtml :: FilePath -> Bool -> IO ()
-openHtml fileName running = do
+-- note: second bool True => open the score, False => open the js visualizer
+openHtml :: FilePath -> Bool -> Bool -> IO ()
+openHtml fileName running vis = do
     -- upload the file to a file host
   uploadResult <- uploadRequest fileName
   case uploadResult of
@@ -55,5 +57,6 @@ openHtml fileName running = do
             let name        = stripTemp $ last $ splitOn "/" fileName
                 encodedName = BS.unpack $ urlEncode True $ BS.pack name
                 encodedLink = BS.unpack $ urlEncode True $ BS.pack link
-                htmlURL = baseURL ++ "/" ++ htmlPath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
+                sourcePath    = if vis then scorePath else visPath
+                htmlURL = baseURL ++ "/" ++ sourcePath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
             launch htmlURL
