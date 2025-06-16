@@ -111,6 +111,7 @@ log = liftIO . putStrLn
 --               FUNCTIONAL                   --
 ------------------------------------------------
 
+----------------- PIECES -----------------------
 
 getTrackAnd :: Name -> (Track -> MyParser ()) -> MyParser ()
 getTrackAnd name parser = do
@@ -127,6 +128,8 @@ getMusicAnd name parser = do
     case gotMusic of
         Left err    -> log err
         Right music -> parser music
+
+----------------- DEFINE -----------------------
 
 tryAddTrack :: Name -> Track -> MyParser ()
 tryAddTrack name track = do
@@ -164,6 +167,9 @@ callAddMusic name music state = do
             putState newSt
             log $ message name
 
+
+----------------- SHOW -----------------------
+
 showAllHelper :: MyParser ()
 showAllHelper = do
     state <- getState
@@ -174,11 +180,15 @@ showOneHelper name = do
     state <- getState
     liftIO $ printValue state name
 
+    
+----------------- PLAY -----------------------
+
 tryPlayFile :: String -> MyParser ()
 tryPlayFile fileName = validatePathAnd fileName checkFile
     where
         checkFile = checkFileExistsAnd fileName (liftIO $ playMidiFile fileName)
 
+-- checks if a music value was modified <=> its midi value has to be recalculated
 checkModifiedAnd :: Name -> MyParser () -> MyParser () -> MyParser () -> MyParser ()
 checkModifiedAnd name parseIfNot parseIfNotModified parseIfModified = do
     state <- getState
@@ -220,6 +230,9 @@ tryPlayTrack name oct instrument = getTrackAnd name playTrack
                 Left err    -> log err
                 Right music -> liftIO $ playMusic music
 
+
+----------------- SAVE -----------------------
+
 saveToFile :: Name -> String -> MyParser ()
 saveToFile name fileName = validatePathAnd fileName saveFile 
     where saveFile       = getMusicAnd name makeSave
@@ -227,6 +240,9 @@ saveToFile name fileName = validatePathAnd fileName saveFile
                 let Just message = lookup FileSave logs
                 liftIO $ saveMusic music fileName
                 log $ message fileName
+
+
+----------------- LOAD -----------------------
 
 loadFromFile :: Name -> String -> MyParser ()
 loadFromFile name fileName = validatePathAnd fileName checkFile 
@@ -239,6 +255,9 @@ loadFromFile name fileName = validatePathAnd fileName checkFile
             case loaded of
                 Nothing    -> log $ loadFail fileName
                 Just music -> callAddMusic name music state
+
+
+----------------- READ -----------------------
 
 getFileLines :: FilePath -> MyParser [String]
 getFileLines file = do
@@ -261,6 +280,9 @@ manageReadResult file result = do
         Left err         -> log $ err ++ "\n" ++ noReadLog file
         Right (state, _) -> putState state
 
+
+----------------- VIS -----------------------
+
 visFromFile :: String -> MyParser ()
 visFromFile fileName = validateCheckFileAnd fileName (liftIO $ createScore fileName)
 
@@ -271,6 +293,9 @@ visFromMusic name = getMusicAnd name launchScore
             liftIO $ saveMusic music fileName
             liftIO $ createScore fileName
             liftIO $ removeFile fileName
+
+
+----------------- SEE -----------------------
 
 seeVis :: Name -> Octave -> Instrument -> MyParser ()
 seeVis name oct instr = getTrackAnd name openVis
@@ -291,6 +316,9 @@ seeVis name oct instr = getTrackAnd name openVis
                     modifyState serverRunning
                      -- delete the temp file
                     liftIO $ removeFile fileName
+
+
+----------------- SCORE -----------------------
 
 htmlMidiFromFile :: FilePath -> MyParser ()
 htmlMidiFromFile fileName = validateCheckFileAnd fileName openVis
@@ -316,6 +344,9 @@ htmlMidiFromMusic name = getMusicAnd name openVis
                     liftIO $ removeFile fileName
                     modifyState serverRunning
 
+
+----------------- MODIFY -----------------------
+
 modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do
     modifyState $ updateTrack name newTrack
@@ -329,6 +360,9 @@ modifyMusic name newMusic message = do
     log $ message name
     liftIO $ print newMusic
 
+
+----------------- INSERT -----------------------
+
 callInsert :: Name -> IndexOrError -> Name -> MyParser ()
 callInsert name idx insertName = do
     case idx of
@@ -341,6 +375,9 @@ callInsert name idx insertName = do
                         Just message = lookup TrackModifySuccess logs
                     modifyTrack name newTrack message
 
+
+----------------- DELETE -----------------------
+
 callDelete :: Name -> IndexesOrError -> MyParser ()
 callDelete name indexes = do
     case indexes of
@@ -351,6 +388,9 @@ callDelete name indexes = do
                     let newTrack     = deleteT track idxs
                         Just message = lookup TrackModifySuccess logs
                     modifyTrack name newTrack message
+
+
+----------------- REPLACE -----------------------
 
 callReplace :: Name -> IndexesOrError -> String -> MyParser ()
 callReplace name indexes replaceName = do
@@ -363,6 +403,9 @@ callReplace name indexes replaceName = do
                         Just message = lookup TrackModifySuccess logs
                     modifyTrack name newTrack message
 
+
+----------------- PARALLELIZE -----------------------
+
 callParallelize :: Name -> Name -> MyParser ()
 callParallelize name paraName = getMusicAnd name getParaName
     where getParaName music        = getMusicAnd paraName (makePara music)
@@ -371,6 +414,9 @@ callParallelize name paraName = getMusicAnd name getParaName
                 Just message = lookup MelodyModifySuccess logs
             modifyMusic name newMusic message
 
+
+----------------- SEQUENCE -----------------------
+
 callSequence :: Name -> Maybe Int -> Name -> MyParser ()
 callSequence name num seqName = getTrackAnd name getSeqTrack
     where getSeqTrack track   = getTrackAnd seqName (makeSeq track)
@@ -378,6 +424,9 @@ callSequence name num seqName = getTrackAnd name getSeqTrack
             let newTrack     = addRepeatT track seqTr num
                 Just message = lookup TrackModifySuccess logs
             modifyTrack name newTrack message
+
+
+----------------- TRANSPOSE -----------------------
 
 getValueAnd :: Name -> (PSValue -> MyParser ()) -> MyParser ()
 getValueAnd name parser = do
@@ -398,6 +447,9 @@ callTranspose name num = getValueAnd name transValue
                 Right music -> do
                     let Just message = lookup MelodyTransSuccess logs
                     modifyMusic name music message
+
+
+----------------- FLATTEN -----------------------
 
 callFlatten :: Name -> [Pitch] -> MyParser ()
 callFlatten name ptchs = getValueAnd name flattenVal
