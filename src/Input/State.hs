@@ -121,24 +121,18 @@ printValue state name =
 printState :: ParsingState -> IO ()
 printState state = do
     printTracks   $ tracks state
-    putStrLn "-----------------\n"
+    putStrLn "-----------"
     printMelodies $ melodies state
 
 printTracks :: [(Name, Track)] -> IO ()
-printTracks tracks = putStrLn "Tracks\n" >> foldl accPrint (return ()) tracks
+printTracks tracks = putStrLn "Tracks" >> foldl accPrint (return ()) tracks
     where accPrint instr track = instr >> printTrack track 
-          printTrack (name, track) = do
-            putStrLn $ "Track " ++ name ++ ":" 
-            print track
-            putStrLn ""
+          printTrack (name, track) = putStrLn $ " - " ++ name 
 
 printMelodies :: [(Name, Music)] -> IO ()
-printMelodies melodies = putStrLn "Melodies\n" >> foldl accPrint (return ()) melodies
+printMelodies melodies = putStrLn "Melodies" >> foldl accPrint (return ()) melodies
     where accPrint instr melody = instr >> printMelody melody
-          printMelody (name, music) = do
-            putStrLn $ "Melody " ++ name ++ ":" 
-            print music
-            putStrLn ""
+          printMelody (name, music) = putStrLn $ " - " ++ name
 
 -- transpose either a track or a music with a number of semitones
 transposeValue :: PSValue -> Int -> PSValue

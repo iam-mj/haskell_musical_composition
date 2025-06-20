@@ -11,6 +11,7 @@ import Text.Parsec hiding (spaces, parse, runParser)
 import Prelude hiding (show, read)
 import System.IO
 import Control.Monad.Cont (liftIO)
+import Input.Help
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
@@ -35,7 +36,7 @@ parse buffer state = do
 
 mainParser :: MyParser ParsingState
 mainParser = do
-    choice $ map try [track, melody, show, play, save, load, read, score, vis, see, modify]
+    choice $ map try [track, melody, show, play, save, load, read, score, vis, see, modify, help]
     getState
 
 
@@ -432,6 +433,14 @@ flatten name = do
     string "flatten"
     pitches <- commaSep (spaces >> pitchClass)
     callFlatten name pitches
+
+--------------- HELP -----------------------
+
+help :: MyParser ()
+help = do
+    string "help"
+    spaces
+    generalHelp <|> instructionHelp
 
 -------------------------------------------
 --             HELPERS                   -- 

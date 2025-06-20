@@ -41,6 +41,7 @@ library
         Visual.CreateScore
         Visual.OpenHtml
         Visual.ToJSON
+        Input.Help
 
     -- Modules included in this library but not exported.
     -- other-modules:
