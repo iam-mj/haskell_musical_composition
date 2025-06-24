@@ -57,6 +57,6 @@ openHtml fileName running vis = do
             let name        = stripTemp $ last $ splitOn "/" fileName
                 encodedName = BS.unpack $ urlEncode True $ BS.pack name
                 encodedLink = BS.unpack $ urlEncode True $ BS.pack link
-                sourcePath    = if vis then scorePath else visPath
+                sourcePath  = if vis then scorePath else visPath
                 htmlURL = baseURL ++ "/" ++ sourcePath ++ sourceURL ++ encodedLink ++ nameURL ++ encodedName
             launch htmlURL

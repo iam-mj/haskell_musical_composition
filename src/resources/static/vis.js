@@ -36,8 +36,8 @@ const circleVis = (p) => {
         // set up event listeners on the player
         const player = document.getElementById("player");
         player.addEventListener("start", () => {
-            start   = p.millis();
             drawing = true;
+            start   = p.millis();
         });
         player.addEventListener("stop", () => {
             drawing = false;

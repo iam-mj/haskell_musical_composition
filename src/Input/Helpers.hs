@@ -324,7 +324,7 @@ htmlMidiFromFile :: FilePath -> MyParser ()
 htmlMidiFromFile fileName = validateCheckFileAnd fileName openVis
     where openVis = do
             state <- getState
-            liftIO $ openHtml fileName (serverRuns state) False
+            liftIO $ openHtml fileName (serverRuns state) True
             modifyState serverRunning
 
 -- note: do not open visualizer for songs with more than one track
@@ -340,7 +340,7 @@ htmlMidiFromMusic name = getMusicAnd name openVis
                     let fileName    = defFileName name
                         serverState = serverRuns state
                     liftIO $ saveMusic music fileName
-                    liftIO $ openHtml fileName serverState False
+                    liftIO $ openHtml fileName serverState True
                     liftIO $ removeFile fileName
                     modifyState serverRunning
 
