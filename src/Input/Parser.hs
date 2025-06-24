@@ -18,7 +18,7 @@ import Input.Help
 -- NOTE: we accept both mappings and ints for interval values
 
 runParser :: IO ()
-runParser = parse "" emptyState
+runParser = putStrLn "\n|: PRELUDE :|\n" >> parse "" emptyState
 
 parse :: String -> ParsingState -> IO ()
 parse buffer state = do
