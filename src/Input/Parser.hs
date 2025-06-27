@@ -13,6 +13,7 @@ import System.IO
 import Control.Monad.Cont (liftIO)
 import Input.Help
 import Text.Parsec (space)
+import System.Exit (exitSuccess)
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
@@ -26,14 +27,17 @@ parse buffer state = do
     putStr "prelude> "
     hFlush stdout
     line   <- getLine
-    if line /= "" then do
-        let newBuffer = buffer ++ line ++ "\n"
-        parse newBuffer state
-    else do
-        result <- runParserT mainParser state "<stdin>" buffer
-        case result of
-            Left err       -> print err >> parse "" state
-            Right newState -> parse "" newState
+    if line == "exit" 
+        then exitSuccess
+        else
+            if line /= "" then do
+                let newBuffer = buffer ++ line ++ "\n"
+                parse newBuffer state
+            else do
+                result <- runParserT mainParser state "<stdin>" buffer
+                case result of
+                    Left err       -> print err >> parse "" state
+                    Right newState -> parse "" newState
 
 mainParser :: MyParser ParsingState
 mainParser = do

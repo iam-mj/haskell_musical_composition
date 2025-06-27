@@ -32,6 +32,7 @@ printGeneral = do
     log "\nWelcome to Prelude!"
     log "Here are the available instructions. Try typing \"help [instruction-name]\" to get more information on specific instructions."
     log $ foldl (\str (name, instrs) -> str ++ "\n" ++ name ++ "\n" ++ formatList instrs) "" instructions
+    log "Type \"exit\" to stop the program.\n"
 
 instructions :: [(Name, [String])]
 instructions = [("Music Composition",   ["track", "melody", "modify"]),
