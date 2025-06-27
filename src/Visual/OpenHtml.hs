@@ -17,9 +17,9 @@ import Visual.CreateScore (launch)
 
 serverPort :: Int
 serverPort    = 3000
-staticFolder  = "src/resources/static"
-scorePath      = "index.html"
-visPath        = "vis.html"
+staticFolder  = "src/resources"
+scorePath     = "index.html"
+visPath       = "vis.html"
 baseURL       = "http://localhost:" ++ show serverPort
 sourceURL     = "?src="
 nameURL       = "&name="

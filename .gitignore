@@ -4,4 +4,4 @@ sources/*
 grammar-proposal.txt
 src/Debug.hs
 src/front.html
-src/resources/static/notes.json
+src/resources/notes.json

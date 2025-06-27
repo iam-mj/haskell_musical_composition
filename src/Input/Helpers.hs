@@ -53,7 +53,7 @@ type PitchWithChange = (Pitch, OctaveChange)
 ------------------------------------------------
 
 defFileName name = "src/resources/temp_" ++ name ++ ".mid"
-defJson          = "src/resources/static/notes.json"
+defJson          = "src/resources/notes.json"
 
 -- check that a path is leads to a midi file
 validateMidiPath :: FilePath -> Maybe String
