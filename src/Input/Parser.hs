@@ -9,35 +9,95 @@ import Music.Data
 
 import Text.Parsec hiding (spaces, parse, runParser)
 import Prelude hiding (show, read)
-import System.IO
 import Control.Monad.Cont (liftIO)
 import Input.Help
 import Text.Parsec (space)
-import System.Exit (exitSuccess)
+import System.IO
+import System.Exit
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
 -- NOTE: we accept both mappings and ints for interval values
 
-runParser :: IO ()
-runParser = putStrLn "\n|: PRELUDE :|\n" >> parse "" emptyState
 
-parse :: String -> ParsingState -> IO ()
-parse buffer state = do
+-------------------------------------------
+--               PARSING                 --
+-------------------------------------------
+
+-------------- UTILS -----------------
+
+-- check if a bracket was closed in the line (only in "track" instr)
+closeBracket :: String -> Bool
+closeBracket line = notElem '{' line && '}' `elem` line
+
+-- check if a bracket was opened and left like that (only in "track" instr)
+openBracket :: String -> Bool
+openBracket line = '{' `elem` line && notElem '}' line
+
+-- we want to ignore blank lines
+isSpaces :: String -> Bool
+isSpaces = foldl (\bool chr -> bool && (chr `elem` " \n\t")) True
+
+
+--------------- IO -------------------
+
+runParser :: IO ()
+runParser = putStrLn "\n|: PRELUDE :|\n" >> parse "" emptyState False
+
+-- note: we keep on parsing lines only if an open bracket was not closed
+parse :: String -> ParsingState -> Bool -> IO ()
+parse buffer state bracket = do
     putStr "prelude> "
     hFlush stdout
     line   <- getLine
-    if line == "exit" 
+    if line == "exit"
         then exitSuccess
-        else
-            if line /= "" then do
-                let newBuffer = buffer ++ line ++ "\n"
-                parse newBuffer state
-            else do
-                result <- runParserT mainParser state "<stdin>" buffer
-                case result of
-                    Left err       -> print err >> parse "" state
-                    Right newState -> parse "" newState
+        else if isSpaces line
+                then parse buffer state bracket
+                else do
+                    let newBuffer    = buffer ++ line ++ "\n"
+                        stillOpen    = not $ closeBracket line
+                        leaveBracket = openBracket line
+                    if (bracket && stillOpen) || leaveBracket
+                        then parse newBuffer state True
+                        else do
+                            result <- runParserT mainParser state "" newBuffer
+                            case result of
+                                Left err       -> print err >> parse "" state False
+                                Right newState -> parse "" newState False
+
+---------------- FILES -------------------
+
+type ParseArgs = (String, ParsingState, Bool)
+
+parseFile :: FilePath -> MyParser ()
+parseFile file = do
+    state  <- getState
+    lines  <- getFileLines file
+    let initialArgs = liftIO $ return $ Right ("", state, False)
+    readResult <- liftIO $ foldl parseLines initialArgs lines
+    manageReadResult file readResult
+
+parseLines :: IO (Either String ParseArgs) -> String -> IO (Either String ParseArgs)
+parseLines args line = do
+    lastResult <- args
+    case lastResult of
+        Left err                       -> return $ Left err
+        Right (buffer, state, bracket) -> do
+            if isSpaces line
+                then return $ Right (buffer, state, bracket)
+                else do
+                    let newBuffer    = buffer ++ line ++ "\n"
+                        stillOpen    = not $ closeBracket line
+                        leaveBracket = openBracket line
+                    if (bracket && stillOpen) || leaveBracket
+                        then return $ Right (newBuffer, state, True)
+                        else do
+                            result <- runParserT mainParser state "" newBuffer
+                            case result of
+                                Left err       -> return $ Left $ showErr err
+                                Right newState -> return $ Right ("", newState, False)
+
 
 mainParser :: MyParser ParsingState
 mainParser = do
@@ -280,29 +340,6 @@ read = do
     file <- fileName
     eol
     parseFile file
-    
-parseFile :: FilePath -> MyParser ()
-parseFile file = do
-    state  <- getState
-    lines  <- getFileLines file
-    let initialArgs = liftIO $ return $ Right (state, "")
-    readResult <- liftIO $ foldl parseLines initialArgs lines
-    manageReadResult file readResult
-
-parseLines :: IO (Either String (ParsingState, String)) -> String -> IO (Either String (ParsingState, String))
-parseLines args line = do
-    lastResult <- args
-    case lastResult of
-        Left err              -> return $ Left err
-        Right (state, buffer) -> do
-            if line /= "" then do 
-                let newBuffer = buffer ++ line ++ "\n"
-                return $ Right (state, newBuffer)
-            else do
-                result <- runParserT mainParser state "" buffer
-                case result of
-                    Left error     -> return $ Left $ showErr error
-                    Right newState -> return $ Right (newState, "")
 
 --------------- SCORE ----------------------
 

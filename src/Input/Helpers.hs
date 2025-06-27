@@ -273,12 +273,12 @@ getFileLines file = do
             let lines = splitOn "\n" contents
             return lines
 
-manageReadResult :: FilePath -> Either Error (ParsingState, String) -> MyParser ()
+manageReadResult :: FilePath -> Either Error (String, ParsingState, Bool) -> MyParser ()
 manageReadResult file result = do
     let Just noReadLog = lookup ReadRollBack logs
     case result of
-        Left err         -> log $ err ++ "\n" ++ noReadLog file
-        Right (state, _) -> putState state
+        Left err            -> log $ err ++ "\n" ++ noReadLog file
+        Right (_, state, _) -> putState state
 
 
 ----------------- VIS -----------------------
