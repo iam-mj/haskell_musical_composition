@@ -12,6 +12,7 @@ import Prelude hiding (show, read)
 import System.IO
 import Control.Monad.Cont (liftIO)
 import Input.Help
+import Text.Parsec (space)
 
 -- TODO: TASK 18 - any chance not to show "pm_winmm_term called/exting" messages? nope :,)
 
@@ -156,6 +157,10 @@ oneChord = do
 customChord :: MyParser Chord
 customChord = do
     char '<'
+    spaces
+    char '0'
+    spaces
+    char ','
     digits <- commaSep $ spaces >> many digit
     char '>'
     makeCustomChord digits
