@@ -193,7 +193,9 @@ visHelp = string "vis" >> printVis
             log "\tvis [path-to-file]"
             log "The path to the MIDI file should be enclosed in quotes (\"\")."
             log "\nCurrently, the \"vis\" instruction will open up a \"Noteflight\" score importing the Melody in the browser."
-            log "Please take note of the fact that \"Noteflight\" confirmed an existing bug at MIDI files import, which makes the created score representation unpredictable.\n"
+            log "Please take note of the fact that \"Noteflight\" confirmed an existing bug at MIDI files import, which makes the created score representation unpredictable."
+            log "\nPrelude uses the Noteflight Launch API. For more information about the API, please visit the Noteflight documentation at https://www.noteflight.com/doc/api/launch."
+            log "\nNoteflight is a registered trademark of Hal Leonard, LLC. Prelude uses the Noteflight Launch API under the terms outlined in their documentation. All rights to Noteflight and its services remain with Hal Leonard, LLC.\n"
 
 -------------- SCORE --------------
 
@@ -206,7 +208,9 @@ scoreHelp = string "score" >> printScore
             log "\tscore [path-to-file]"
             log "\nThe path to the MIDI file should be enclosed in quotes (\"\")."
             log "\nThe \"html-midi-player\" visualization will depict the score representation of the Melody, while also providing audio rendering of the Melody."
-            log "The \"html-midi-player\" visualization only works as expected for Melodies with a single instrument.\n"
+            log "The \"html-midi-player\" visualization only works as expected for Melodies with a single instrument."
+            log "\nPrelude uses html-midi-player (https://github.com/cifkao/html-midi-player), a set of web components developed by @cifkao(https://github.com/cifkao), to play MIDI files directly in the browser."
+            log "\nhtml-midi-player is used under the terms of the MIT License. This project is not affiliated with or endorsed by Cifkao.\n"
 
 -------------- SEE --------------
 
