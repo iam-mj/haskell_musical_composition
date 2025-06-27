@@ -8,10 +8,6 @@ import Data.Maybe (fromJust)
 
 defTempo = 500000 :: Int -- 120 BPM
 
--- NOTE: RESEARCH 1 - look more into the PMMsg form
--- NOTE: RESEARCH 2 - do i actually need milliseconds...?
--- NOTE: RESEARCH 3 - PPQs??
-
 data SynError = GetDefaultOutputIdErr | GetDefaultOutputErr | MidiLoadErr
                 deriving Eq
 
@@ -89,7 +85,7 @@ backToAbs list = accBackToAbs list 0
     where accBackToAbs [] time = []
           accBackToAbs ((time, msg) : rest) currTime = (time + currTime, msg) : accBackToAbs rest (time + currTime)
 
--- FIXME: RESEARCH 3
+-- note: ppq = pulses per quarter note = ticks per beat = time div
 defPPQ = 480 :: Int
 
 getPPQ :: Midi -> Int
@@ -114,7 +110,7 @@ sendMidiEvents stream ppq events = sendMidi events defTempo 0
         sendMidi msgs newTempo (lastTime + timeDiff)
 
 -- convert a Codec.Midi message into a PortMidi message
--- FIXME: RESEARCH 1
+-- note: pmmsg = status (which includes the channel) + 2 arguments
 toPMMsg :: Message -> Maybe PMMsg
 toPMMsg m@(NoteOn ch pitch velocity) = Just $ PMMsg (fromIntegral $ eventStatus m ch) (fromIntegral pitch) (fromIntegral velocity)
 toPMMsg m@(NoteOff ch pitch _)       = Just $ PMMsg (fromIntegral $ eventStatus m ch) (fromIntegral pitch) 0
@@ -128,7 +124,6 @@ eventStatus msg ch = base msg + fromIntegral ch
           base (ProgramChange _ _) = 0xC0
 
 -- convert codec.midi ticks to microseconds
--- we make use of ppq = pulses per quarter note -> stored in codec.midi timeDiv
--- FIXME: RESEARCH 2
+-- we make use of ppq = pulses per quarter note = codec.midi timeDiv
 ticksToMicroseconds :: Int -> Int -> Int -> Int
 ticksToMicroseconds ticks tempo ppq = (ticks * tempo) `div` ppq

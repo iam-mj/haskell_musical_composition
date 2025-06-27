@@ -6,13 +6,10 @@ import MIDI.Performance
 import MIDI.InstrChannel
 import MIDI.Synthesizer
 
--- NOTE: RESEARCH 1 - find out more about division
--- NOTE: RESEARCH 2 - better notes on toDelta
-
 type MidiEvent       = (Ticks, Message)
 type InstrumentTrack = (Instrument, [MusicEvent]) -- an instrument and the events which correspond to it
 
-division = 96 :: Int -- FIXME: RESEARCH 1
+division = 96 :: Int -- note: ticks per beat (qn)
 
 saveMusic :: Music -> FilePath -> IO ()
 saveMusic music file = exportFile file ((toMidi . perform) music)
@@ -62,7 +59,7 @@ makeTrack icmap (inst, events) =
 makeMEvents :: Channel -> MusicEvent -> (MidiEvent, MidiEvent)
 makeMEvents ch (MEvent {eTime = t, ePitch = pth, eDur = dur, eVol = v}) = 
     ((toDelta t, NoteOn ch pth (limit v)), (toDelta (t + dur), NoteOff ch pth (limit v)))
-    where toDelta t = round (t * 4.0 * fromIntegral division) -- FIXME: RESEARCH 2
+    where toDelta t = round (t * 4.0 * fromIntegral division) -- note: ticks = beats (wn) * ticks per beat (qn)
           limit v   = max 0 (min 127 v)
 
 -- insert a midi event into a list of midi events so that the timestamps are in ascending order
