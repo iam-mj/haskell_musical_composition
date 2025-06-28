@@ -1,0 +1,208 @@
+--------------------------------------
+-- EXEMPLES of possible instructions
+--------------------------------------
+
+-- 1. track definition
+--      with 4 possible constructors ("groups")
+
+	track [track-name] {
+		note: C qn, B hn	    	 -- a note
+		rest: en			         -- a rest
+		duo: maj2 A qn			     -- a dyad: 2 notes interpreted in parallel
+		chord: maj3 B qn, min3 C qn	 -- a chord: 3 or more notes interpreted in parallel
+	}
+
+--      a track's groups are played sequentially from left to right and from top to bottom
+
+
+-- 2. add context (necessary before playing a track)
+
+	melody [melody-name] { [track-name] oct4 violin }	-- octave & instrument
+
+
+-- 3. show:
+    a. a composition
+--      we call "composition" either a track or a melody
+
+	    show [composition-name]
+
+    b. all recorded compositions
+
+        show -all
+
+-- 4. play 
+    a. a composition
+
+	    play [composition-name]
+
+    b. a MIDI file
+
+        play [path-to-file]
+
+    c. a track with a certain context
+--          without recording a melody (+ no caching)
+
+        play { [track-name] oct4 piano }
+
+
+-- 5. saving a melody to a MIDI file 
+
+	save [melody-name] [path-to-file]
+
+-- 6. loading a melody from a MIDI file
+
+    load [path-to-file] [melody-name]
+
+-- 7. reading a file
+--      we accept any files written in Prelude syntax
+
+    read [path-to-file]
+
+-- 8. visualization
+    a. of a melody
+        i. with an external visualizer
+
+            vis [melody-name]
+
+        ii. with a simple in-browser visualizer
+
+            score [melody-name]
+
+    b. of a MIDI file
+        i. with an external visualizer
+
+            vis [path-to-file]
+
+        ii. with a simple in-browser visualizer
+
+            score [path-to-file]
+
+    c. of a track
+
+        see { [track-name] oct4 piano }
+
+
+-- 9. composition manipulation:
+-- 	a. note accessories
+	
+	note: C# qn	-- diez
+	note: Bb en	-- bemol
+	rest: E hn.	-- dot 
+
+--  b. custom chords
+--      the list of semitones between the chord's "root" note and all the notes it is made up of; 
+        we always expect the first number in the list to be 0 (the difference between the root note & itself)
+
+    chord: <0,4,7> C en
+
+-- 	c. relative octave change
+
+	note: A(-1) qn, B(+2) en
+
+-- 	d. repeatition
+	
+	note: B qn, C hn x3, D en 	-- of a group
+	note: B qn, C hn, D en (x2)	-- of a line of groups
+
+--	e. modifying a composition
+--		i. index operations
+
+		modify [track-name] insert [index] [inserted-track-name]
+		modify [track-name] delete [indexes]
+		modify [track-name] replace [indexes] [replacing-track-name]
+
+--		ii. parallelize 2 melodies
+--			for different instruments / octaves
+
+		modify [melody-name] || [added-melody-name]    -- the result is stored in the first melody
+
+-- 		iii. sequence 2 tracks
+
+		modify [track-name] ++ [added-track-name]	   -- the result is stored in the first track
+		modify [track-name] ++3 [added-track-name]     -- concatenate & repeat
+
+--		iv. transponse with a number of semitones
+
+		modify [composition-name] transpose [semitones-number]
+
+--      v. flatten certain pitches
+
+        modify [composition-name] flatten A, C#, D
+
+
+
+----------------------------------
+-- GRAMMAR
+----------------------------------
+S -> Define | Show | Melody | Play | Save | Load | Read | Score | Vis | See | Modify
+
+
+Define -> track MVar {\n Groups }\n
+
+Groups -> Group | Group Groups
+Group  -> NoteLine | RestLine | DuoLine | ChordLine
+
+NoteLine -> note: Notes RepLine\n
+Notes	 -> Note | Note, Notes
+Note     -> PitchOp Dur	Rep			                   -- pitch & duration & repeatition
+
+PitchOp	       -> Pitch | PitchOctChange		       -- simple & octave change pitch
+PitchOctChange -> Pitch (+ Number) | Pitch (- Number)
+Pitches        -> Pitch | Pitch, Pitches
+Pitch 	       -> PitchClass | PitchClass # | PitchClass b
+
+RestLine -> rest: Dur RepLine\n
+
+DuoLine -> duo: Duos RepLine\n
+Duos 	-> Duo | Duo, Duos
+Duo	    -> Interval Note
+
+ChordLine -> chord: Chords RepLine\n
+Chords 	  -> Chord | Chord, Chords
+Chord     -> ChordType Note
+
+RepLine -> '' | (Rep) | /(Rep)
+Rep 	-> x Number
+
+
+Show -> show MVar\n | show -all\n
+
+Melody  -> melody MVar { MVar Octave Instrument }\n -- to which track do we give the context to become what music
+Octave  -> oct Number
+
+Play  -> play MVar\n | play FileName\n | play { MVar Octave Instrument }\n 
+
+Save  -> save MVar FileName\n
+
+Load  -> load FileName MVar\n
+
+Read  -> read FileName\n
+
+Score -> score MVar\n | score FileName\n
+
+Vis   -> vis MVar\n | vis FileName\n
+
+See   -> see { MVar Octave Instrument }\n
+
+
+Modify   -> modify MVar ModifyOp\n
+ModifyOp -> Insert | Delete | Replace | Parallelize | Sequence | Transpose | Flatten
+
+Insert   -> insert Index MVar
+Delete   -> delete Indexes 
+Replace  -> replace Indexes MVar
+
+Indexes -> Index | Index-Index
+Index   -> Number
+
+Parallelize -> || MVar
+Sequence    -> ++ MVar | ++ Number MVar
+Transpose   -> transpose Number
+Flatten     -> flatten Pitches
+
+
+-- we consider MVar, PitchClass, Dur, Interval, ChordType, Number, Instrument & FileName known =)
+
+-- MVar (composition names) are supposed to be formed of letters, digits and underscores ("_")
+-- check "help pitch", "help duration", "help interval", "help chord", "help melody" for details on 
+-- PitchClass, Dur, Interval, ChordType and Instrument
