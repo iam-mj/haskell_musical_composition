@@ -351,14 +351,12 @@ modifyTrack :: Name -> Track -> (String -> String) -> MyParser ()
 modifyTrack name newTrack message = do
     modifyState $ updateTrack name newTrack
     log $ message name
-    liftIO $ print newTrack
 
 modifyMusic :: Name -> Music -> (String -> String) -> MyParser ()
 modifyMusic name newMusic message = do
     modifyState $ updateMusic name newMusic
     modifyState $ updateModified name True
     log $ message name
-    liftIO $ print newMusic
 
 
 ----------------- INSERT -----------------------
