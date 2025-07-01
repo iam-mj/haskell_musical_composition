@@ -195,7 +195,7 @@ visHelp = string "vis" >> printVis
             log "The path to the MIDI file should be enclosed in quotes (\"\")."
             log "\nCurrently, the \"vis\" instruction will open up a \"Noteflight\" score importing the Melody in the browser."
             log "Please take note of the fact that \"Noteflight\" confirmed an existing bug at MIDI files import, which makes the created score representation unpredictable."
-            log "\nPrelude uses the Noteflight Launch API. For more information about the API, please visit the Noteflight documentation at https://www.noteflight.com/doc/api/launch."
+            log "\nPrelude uses the Noteflight Launch API. For more information about the API, please visit the Noteflight documentation at https://www.noteflight.com/info/api/server_doc#launch."
             log "\nNoteflight is a registered trademark of Hal Leonard, LLC. Prelude uses the Noteflight Launch API under the terms outlined in their documentation. All rights to Noteflight and its services remain with Hal Leonard, LLC.\n"
 
 -------------- SCORE --------------
