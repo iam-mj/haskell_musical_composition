@@ -83,7 +83,7 @@ We offer currently 3 methods of graphic representation for music compositions co
   
    Unfortunetly, a current Noteflight bug at MIDI files import makes the created score representation unpredictable. It usually affects note duration.
   
-   Prelude uses the Noteflight Launch API. For more information about the API, please visit the [Noteflight documentation](https://www.noteflight.com/doc/api/launch)
+   Prelude uses the Noteflight Launch API. For more information about the API, please visit the [Noteflight documentation](https://www.noteflight.com/info/api/server_doc#launch).
    Noteflight is a registered trademark of Hal Leonard, LLC. Prelude uses the Noteflight Launch API under the terms outlined in their documentation. All rights to Noteflight and its services remain with Hal Leonard, LLC.
 
 2. Score Visualizer
